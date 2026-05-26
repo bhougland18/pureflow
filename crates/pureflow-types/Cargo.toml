@@ -3,7 +3,9 @@ name = "pureflow-types"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Shared opaque identifier types (WorkflowId, NodeId, PortId, …) for the Pureflow workflow engine"
 
 [dev-dependencies]
 proptest.workspace = true

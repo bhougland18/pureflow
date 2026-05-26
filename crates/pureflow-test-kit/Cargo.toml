@@ -3,7 +3,9 @@ name = "pureflow-test-kit"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Test builders, property strategies, and test doubles for testing Pureflow node implementations"
 
 [dependencies]
 pureflow-core.workspace = true

@@ -100,4 +100,3 @@ br stats --json
 - Important examples to demo: `[list]`
 - Environment assumptions: `[Nix/devshell, WASM target, local lints, etc.]`
 - Follow-up owner: `[person/team]`
-

@@ -3,7 +3,9 @@ name = "pureflow-runtime"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Asupersync-backed async runtime for single-node execution in the Pureflow workflow engine"
 
 [dependencies]
 asupersync.workspace = true

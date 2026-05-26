@@ -1,5 +1,8 @@
 # Pureflow Workflow Engine — Architecture & Requirements Proposal (v4)
 
+If you are looking for the reuse path into `highland-labs`, see
+[`highland-labs-integration-proposal.md`](highland-labs-integration-proposal.md).
+
 ## 1. Vision
 
 Pureflow is a **Flow-Based Programming (FBP) execution engine** designed for:

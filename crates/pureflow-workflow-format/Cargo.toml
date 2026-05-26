@@ -3,7 +3,9 @@ name = "pureflow-workflow-format"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Workflow definition parsers for Pureflow: JSON (always), TOML and YAML behind optional features"
 
 [dependencies]
 pureflow-types.workspace = true

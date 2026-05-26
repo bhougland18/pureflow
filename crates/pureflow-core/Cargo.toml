@@ -3,7 +3,9 @@ name = "pureflow-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Core traits and runtime contracts for implementing Pureflow nodes: NodeExecutor, ports, messages, and errors"
 
 [dependencies]
 arrow-array = { workspace = true, optional = true }

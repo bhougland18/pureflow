@@ -3,7 +3,9 @@ name = "pureflow-workflow"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
+publish = true
+repository.workspace = true
+description = "Workflow graph structure — nodes, edges, port directions, and structural validation for Pureflow"
 
 [dependencies]
 pureflow-types.workspace = true

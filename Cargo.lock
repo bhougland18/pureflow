@@ -1707,6 +1707,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pureflow"
+version = "0.1.0"
+dependencies = [
+ "pureflow-contract",
+ "pureflow-core",
+ "pureflow-engine",
+ "pureflow-introspection",
+ "pureflow-runtime",
+ "pureflow-types",
+ "pureflow-wasm",
+ "pureflow-workflow",
+ "pureflow-workflow-format",
+]
+
+[[package]]
 name = "pureflow-cli"
 version = "0.1.0"
 dependencies = [

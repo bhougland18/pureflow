@@ -40,3 +40,7 @@ version before they start reading Rust.
 
 - API reference is generated separately via `cargo doc`.
 - Retrieval-oriented facts live in `docs/llm/`.
+- Cross-repo reuse proposal for `highland-labs`:
+  [highland-labs-integration-proposal.md](../archetecture/highland-labs-integration-proposal.md)
+- crates.io publishing options and recommendation:
+  [crates-io-publishing-options.md](../archetecture/crates-io-publishing-options.md)

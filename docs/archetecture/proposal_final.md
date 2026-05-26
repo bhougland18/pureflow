@@ -9,6 +9,10 @@ metadata-first, AI-inspectable Flow-Based Programming runtime built on
 `asupersync`, with Pureflow-owned workflow, port, node-contract, metadata,
 capability, and introspection APIs.
 
+If you are evaluating reuse of this library in `highland-labs`, see
+[`highland-labs-integration-proposal.md`](highland-labs-integration-proposal.md)
+for the migration strategy and boundary mapping.
+
 The highest-priority correction is execution semantics. The repository has
 good boundaries, but `pureflow-engine::run_workflow` is still a sequential
 scaffold. It wires bounded channels, then awaits each node to completion before
