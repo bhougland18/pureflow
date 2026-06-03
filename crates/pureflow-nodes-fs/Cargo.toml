@@ -1,0 +1,23 @@
+[package]
+name = "pureflow-nodes-fs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+description = "Filesystem-watching standard library node for the Pureflow workflow engine"
+
+[dependencies]
+asupersync.workspace = true
+pureflow-core.workspace = true
+pureflow-types.workspace = true
+futures.workspace = true
+notify = "8"
+
+[dev-dependencies]
+pureflow-runtime = { workspace = true }
+pureflow-test-kit.workspace = true
+tempfile = "3"
+
+[lints]
+workspace = true
