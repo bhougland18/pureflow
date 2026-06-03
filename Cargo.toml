@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "crates/pureflow",
+  "crates/pureflow-nodes-fs",
   "crates/pureflow-cli",
   "crates/pureflow-core",
   "crates/pureflow-contract",

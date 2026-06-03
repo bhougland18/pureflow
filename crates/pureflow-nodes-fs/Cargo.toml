@@ -8,6 +8,7 @@ repository.workspace = true
 description = "Filesystem-watching standard library node for the Pureflow workflow engine"
 
 [dependencies]
+asupersync.workspace = true
 pureflow-core.workspace = true
 pureflow-types.workspace = true
 futures.workspace = true
