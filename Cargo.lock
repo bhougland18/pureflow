@@ -1727,11 +1727,13 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap_complete",
+ "futures",
  "insta",
  "pureflow-contract",
  "pureflow-core",
  "pureflow-engine",
  "pureflow-introspection",
+ "pureflow-rules",
  "pureflow-runtime",
  "pureflow-types",
  "pureflow-wasm",

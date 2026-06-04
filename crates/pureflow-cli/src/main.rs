@@ -34,15 +34,18 @@ use pureflow_engine::{
     run_workflow_with_registry_and_metadata_sink_summary,
 };
 use pureflow_introspection::{
-    IntrospectionJsonError, WorkflowIntrospection, introspect_workflow,
-    workflow_introspection_to_json_string,
+    IntrospectionJsonError, RuleSetIntrospection, UnreachableReason, WorkflowIntrospection,
+    introspect_rule_set, introspect_workflow, workflow_introspection_to_json_string,
 };
+use pureflow_rules::{Condition, EvaluationStrategy, RuleSet};
 use pureflow_runtime::AsupersyncRuntime;
 use pureflow_types::{ExecutionId, MessageId, NodeId, PortId};
 use pureflow_wasm::{WasmtimeBatchComponent, WasmtimeExecutionLimits};
 use pureflow_workflow::{EdgeCapacity, NodeDefinition, PortDirection, WorkflowDefinition};
 use pureflow_workflow_format::{
-    CURRENT_PUREFLOW_VERSION, WorkflowJsonError, WorkflowTomlError, WorkflowYamlError,
+    CURRENT_PUREFLOW_VERSION, LoadedWorkflow, RawWorkflowDefinition, SourceRegistry,
+    WorkflowFormatError, WorkflowJsonError, WorkflowTomlError, WorkflowYamlError,
+    raw_workflow_from_json_str, raw_workflow_from_toml_str, raw_workflow_from_yaml_str,
     workflow_from_json_str, workflow_from_toml_str, workflow_from_yaml_str,
 };
 use serde::Deserialize;
@@ -444,6 +447,33 @@ fn load_workflow(input: &str, path: &Path) -> CliResult<WorkflowDefinition> {
     }
 }
 
+/// Load a workflow together with the rule sets resolved for its `RuleNode`s.
+///
+/// Rule set references (`rule_set_ref`) are resolved through a `SourceRegistry`
+/// rooted at the workflow file's parent directory, mirroring how the workflow
+/// would load at runtime. Inline `rule_set` documents are parsed in place.
+fn load_workflow_with_rules(input: &str, path: &Path) -> CliResult<LoadedWorkflow> {
+    let raw: RawWorkflowDefinition = match path.extension().and_then(|ext| ext.to_str()) {
+        Some("toml") => raw_workflow_from_toml_str(input).map_err(CliError::WorkflowToml)?,
+        Some("yaml" | "yml") => raw_workflow_from_yaml_str(input).map_err(CliError::WorkflowYaml)?,
+        Some("json") | None => raw_workflow_from_json_str(input).map_err(CliError::WorkflowJson)?,
+        Some(ext) => {
+            return Err(CliError::WorkflowFormat(format!(
+                "unsupported workflow file extension `.{ext}`; supported: .json, .toml, .yaml, .yml"
+            )));
+        }
+    };
+
+    let base_dir: PathBuf = path
+        .parent()
+        .filter(|parent: &&Path| !parent.as_os_str().is_empty())
+        .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+    let registry: SourceRegistry = SourceRegistry::with_base_dir(base_dir);
+
+    futures::executor::block_on(raw.load_workflow(&registry))
+        .map_err(|source: WorkflowFormatError| CliError::WorkflowFormat(source.to_string()))
+}
+
 fn validate_workflow_json(input: &str, path: &Path) -> CliResult<String> {
     let workflow: WorkflowDefinition = load_workflow(input, path)?;
 
@@ -525,7 +555,8 @@ fn inspect_workflow_json(input: &str, path: &Path) -> CliResult<String> {
 }
 
 fn explain_workflow_json(input: &str, path: &Path) -> CliResult<String> {
-    let workflow: WorkflowDefinition = load_workflow(input, path)?;
+    let loaded: LoadedWorkflow = load_workflow_with_rules(input, path)?;
+    let workflow: &WorkflowDefinition = &loaded.workflow;
     let mut output: String = format!(
         "workflow `{}`\nstatus: valid\nnodes: {}\nedges: {}\nexecution: native-registry\nmetadata: jsonl lifecycle, message, and queue-pressure records with tiered control-only policy\n",
         workflow.id(),
@@ -563,7 +594,143 @@ fn explain_workflow_json(input: &str, path: &Path) -> CliResult<String> {
         .map_err(|_err: fmt::Error| PureflowError::execution("failed to format explanation"))?;
     }
 
+    if loaded.rule_sets.is_empty() {
+        output.push_str("rule routing: none\n");
+    } else {
+        output.push_str("rule routing:\n");
+        for (node_id, rule_set) in &loaded.rule_sets {
+            explain_rule_set(&mut output, node_id, rule_set)?;
+        }
+    }
+
     Ok(output)
+}
+
+/// Append a plain-text routing explanation for one `RuleNode`'s rule set.
+fn explain_rule_set(output: &mut String, node_id: &NodeId, rule_set: &RuleSet) -> CliResult<()> {
+    let introspection: RuleSetIntrospection = introspect_rule_set(rule_set);
+
+    writeln!(
+        output,
+        "  node {node_id}: rule set `{}` strategy {}",
+        rule_set.id,
+        strategy_label(rule_set.strategy)
+    )
+    .map_err(|_err: fmt::Error| PureflowError::execution("failed to format rule routing"))?;
+
+    for (rule, rule_view) in rule_set.rules.iter().zip(&introspection.rules) {
+        writeln!(
+            output,
+            "    rule {} (priority {}) — if {} [{}] → {}",
+            rule.id,
+            rule.priority,
+            format_condition(&rule.condition),
+            surface_label(&rule_view.condition_surfaces),
+            rule.action
+        )
+        .map_err(|_err: fmt::Error| PureflowError::execution("failed to format rule routing"))?;
+    }
+
+    writeln!(output, "    default → {}", rule_set.default_action)
+        .map_err(|_err: fmt::Error| PureflowError::execution("failed to format rule routing"))?;
+
+    for unreachable in &introspection.unreachable_rules {
+        writeln!(
+            output,
+            "    ! unreachable: rule {} — {}",
+            unreachable.rule_id,
+            unreachable_reason_label(&unreachable.reason)
+        )
+        .map_err(|_err: fmt::Error| PureflowError::execution("failed to format rule routing"))?;
+    }
+
+    Ok(())
+}
+
+/// Short label for an evaluation strategy.
+const fn strategy_label(strategy: EvaluationStrategy) -> &'static str {
+    match strategy {
+        EvaluationStrategy::FirstMatch => "first-match",
+        EvaluationStrategy::AllMatches => "all-matches",
+        EvaluationStrategy::Score => "score",
+    }
+}
+
+/// Bracket-content label naming the packet surfaces a condition draws from,
+/// e.g. `payload`, `tag`, or `payload+provenance` for combinators.
+fn surface_label(surfaces: &pureflow_introspection::ConditionSurfaceSummary) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    if surfaces.payload {
+        parts.push("payload");
+    }
+    if surfaces.tag {
+        parts.push("tag");
+    }
+    if surfaces.provenance {
+        parts.push("provenance");
+    }
+    if surfaces.execution_context {
+        parts.push("execution");
+    }
+    if parts.is_empty() {
+        // Constant-only conditions (Always / Never) draw from no packet surface.
+        parts.push("constant");
+    }
+    parts.join("+")
+}
+
+/// Human-readable reason a rule was flagged unreachable.
+fn unreachable_reason_label(reason: &UnreachableReason) -> String {
+    match reason {
+        UnreachableReason::ConditionIsNever => "condition is never true".to_owned(),
+        UnreachableReason::ShadowedByAlways { shadowing_rule_id } => {
+            format!("shadowed by always-matching rule `{shadowing_rule_id}`")
+        }
+        UnreachableReason::ExactFieldEqSubsumed { shadowing_rule_id } => {
+            format!("duplicate condition already covered by rule `{shadowing_rule_id}`")
+        }
+    }
+}
+
+/// Render a condition as a plain-English expression for the explain command.
+fn format_condition(condition: &Condition) -> String {
+    match condition {
+        Condition::FieldEq { path, value } => format!("{path} == {value}"),
+        Condition::FieldNeq { path, value } => format!("{path} != {value}"),
+        Condition::FieldGt { path, value } => format!("{path} > {value}"),
+        Condition::FieldLt { path, value } => format!("{path} < {value}"),
+        Condition::FieldGte { path, value } => format!("{path} >= {value}"),
+        Condition::FieldLte { path, value } => format!("{path} <= {value}"),
+        Condition::FieldIn { path, values } => {
+            let rendered: Vec<String> = values.iter().map(ToString::to_string).collect();
+            format!("{path} in [{}]", rendered.join(", "))
+        }
+        Condition::FieldExists { path } => format!("{path} exists"),
+        Condition::FieldAbsent { path } => format!("{path} absent"),
+        Condition::FieldMatches { path, pattern } => format!("{path} matches {pattern}"),
+        Condition::TagEq { key, value } => format!("tag {key}={value}"),
+        Condition::TagExists { key } => format!("tag {key} exists"),
+        Condition::TagAbsent { key } => format!("tag {key} absent"),
+        Condition::SourceNode { node_id } => format!("from source node {node_id}"),
+        Condition::ArrivedOnPort { port_id } => format!("arrived on port {port_id}"),
+        Condition::HopCountGt { n } => format!("hop count > {n}"),
+        Condition::HopCountLte { n } => format!("hop count <= {n}"),
+        Condition::WorkflowIs { workflow_id } => format!("workflow is {workflow_id}"),
+        Condition::ExecutionMetadataEq { key, value } => format!("exec metadata {key}={value}"),
+        Condition::And(children) => format!("({})", join_conditions(children, " and ")),
+        Condition::Or(children) => format!("({})", join_conditions(children, " or ")),
+        Condition::Not(inner) => format!("not ({})", format_condition(inner)),
+        Condition::Always => "always".to_owned(),
+        Condition::Never => "never".to_owned(),
+    }
+}
+
+fn join_conditions(conditions: &[Condition], separator: &str) -> String {
+    conditions
+        .iter()
+        .map(format_condition)
+        .collect::<Vec<String>>()
+        .join(separator)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1328,6 +1495,135 @@ mod tests {
         assert!(output.contains("execution: native-registry"));
         assert!(output.contains("metadata: jsonl lifecycle, message, and queue-pressure records"));
         assert!(output.contains("source.out -> sink.in capacity=8"));
+    }
+
+    #[test]
+    fn explain_reports_no_rule_routing_when_absent() {
+        let output = explain_workflow_json(WORKFLOW_JSON, Path::new("workflow.json"))
+            .expect("workflow should explain");
+
+        assert!(output.contains("rule routing: none"));
+    }
+
+    /// Build a workflow JSON document whose `route-by-value` node carries an
+    /// inline rule set, by serialising a real `RuleSet` into the document.
+    fn workflow_with_inline_rules(rule_set: &RuleSet) -> String {
+        let rule_set_json: Value =
+            serde_json::to_value(rule_set).expect("rule set serialises to JSON");
+        json!({
+            "pureflow_version": "1",
+            "id": "flow",
+            "nodes": [
+                { "id": "source", "inputs": [], "outputs": ["out"] },
+                {
+                    "id": "route-by-value",
+                    "inputs": ["in"],
+                    "outputs": ["high-value-out", "fast-path-out"],
+                    "rule_set": rule_set_json
+                },
+                { "id": "fast", "inputs": ["in"], "outputs": [] },
+                { "id": "normal", "inputs": ["in"], "outputs": [] }
+            ],
+            "edges": [
+                { "source": {"node":"source","port":"out"}, "target": {"node":"route-by-value","port":"in"}, "capacity": null },
+                { "source": {"node":"route-by-value","port":"high-value-out"}, "target": {"node":"fast","port":"in"}, "capacity": null },
+                { "source": {"node":"route-by-value","port":"fast-path-out"}, "target": {"node":"normal","port":"in"}, "capacity": null }
+            ]
+        })
+        .to_string()
+    }
+
+    #[test]
+    fn explain_describes_rule_routing_with_surfaces() {
+        use pureflow_rules::{
+            Condition, EvaluationStrategy, FieldPath, Rule, RuleAction, RuleSet, ScalarValue,
+        };
+
+        let rule_set = RuleSet::new(
+            "route-by-value",
+            EvaluationStrategy::FirstMatch,
+            vec![
+                Rule::new(
+                    "high-value",
+                    Condition::FieldGte {
+                        path: FieldPath::new("amount").expect("field path"),
+                        value: ScalarValue::Integer(10000),
+                    },
+                    RuleAction::Route(PortId::new("high-value-out").expect("port")),
+                    10,
+                    "route high-value packets",
+                )
+                .expect("rule"),
+                Rule::new(
+                    "priority-tagged",
+                    Condition::TagEq {
+                        key: "priority".to_owned(),
+                        value: ScalarValue::String("high".to_owned()),
+                    },
+                    RuleAction::Route(PortId::new("fast-path-out").expect("port")),
+                    15,
+                    "route tagged packets",
+                )
+                .expect("rule"),
+            ],
+            RuleAction::Drop,
+            false,
+        )
+        .expect("rule set");
+
+        let workflow = workflow_with_inline_rules(&rule_set);
+        let output =
+            explain_workflow_json(&workflow, Path::new("workflow.json")).expect("explain rules");
+
+        assert!(
+            output.contains("node route-by-value: rule set `route-by-value` strategy first-match")
+        );
+        assert!(output.contains(
+            "rule high-value (priority 10) — if amount >= 10000 [payload] → Route(high-value-out)"
+        ));
+        assert!(output.contains(
+            "rule priority-tagged (priority 15) — if tag priority=\"high\" [tag] → Route(fast-path-out)"
+        ));
+        assert!(output.contains("default → Drop"));
+    }
+
+    #[test]
+    fn explain_warns_about_unreachable_rules() {
+        use pureflow_rules::{Condition, EvaluationStrategy, Rule, RuleAction, RuleSet};
+
+        let rule_set = RuleSet::new(
+            "route-by-value",
+            EvaluationStrategy::FirstMatch,
+            vec![
+                Rule::new(
+                    "catch-all",
+                    Condition::Always,
+                    RuleAction::Route(PortId::new("high-value-out").expect("port")),
+                    10,
+                    "matches everything",
+                )
+                .expect("rule"),
+                Rule::new(
+                    "shadowed",
+                    Condition::Always,
+                    RuleAction::Route(PortId::new("fast-path-out").expect("port")),
+                    20,
+                    "never reached",
+                )
+                .expect("rule"),
+            ],
+            RuleAction::Drop,
+            false,
+        )
+        .expect("rule set");
+
+        let workflow = workflow_with_inline_rules(&rule_set);
+        let output =
+            explain_workflow_json(&workflow, Path::new("workflow.json")).expect("explain rules");
+
+        assert!(output.contains(
+            "! unreachable: rule shadowed — shadowed by always-matching rule `catch-all`"
+        ));
     }
 
     #[test]
