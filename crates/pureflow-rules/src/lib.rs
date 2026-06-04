@@ -36,12 +36,11 @@
 pub mod action;
 pub mod condition;
 pub mod error;
+pub mod eval;
 pub mod rule;
 
 pub use action::RuleAction;
-pub use condition::{
-    ConditionSurface, EvalContext, FieldPath, GlobPattern, ScalarValue,
-    Condition,
-};
+pub use condition::{Condition, ConditionSurface, EvalContext, FieldPath, GlobPattern, ScalarValue};
 pub use error::RuleError;
+pub use eval::RuleSetEvaluator;
 pub use rule::{EvaluationStrategy, Rule, RuleDecision, RuleSet};

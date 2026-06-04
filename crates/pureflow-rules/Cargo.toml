@@ -13,5 +13,6 @@ serde = ["dep:serde", "pureflow-types/serde"]
 [dependencies]
 pureflow-core = { workspace = true }
 pureflow-types = { workspace = true }
+bytes = { workspace = true }
 serde_json = { workspace = true }
 serde = { version = "1", features = ["derive"], optional = true }

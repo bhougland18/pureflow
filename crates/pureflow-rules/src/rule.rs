@@ -133,6 +133,9 @@ pub struct RuleDecision {
     pub matched_rule: Option<String>,
     /// Tags applied to the packet during evaluation (from `Tag` actions).
     pub tags_applied: Vec<(String, ScalarValue)>,
+    /// Per-condition trace, populated only when `RuleSet::trace_conditions` is `true`.
+    /// Empty when tracing is disabled; zero allocation overhead in that case.
+    pub conditions_evaluated: Vec<pureflow_core::ConditionTrace>,
 }
 
 #[cfg(test)]

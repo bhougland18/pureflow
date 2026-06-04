@@ -155,10 +155,10 @@ pub enum ConditionSurface {
 
 /// Context provided to the rule evaluator for one packet evaluation.
 ///
-/// The caller constructs this from a `PortPacket` and the current node context.
-/// Tags represent annotations accumulated from upstream `Tag` actions.
-/// Execution metadata is an optional bag of key-value pairs that can be
-/// set by the workflow runtime for `ExecutionMetadataEq` conditions.
+/// Carries the packet's metadata context alongside the payload for condition
+/// evaluation. The payload itself is passed separately to the evaluator — this
+/// struct holds only the context-specific surfaces (tags, provenance, execution
+/// context).
 ///
 /// `EvalContext` is not serializable because it holds borrowed references.
 /// Serialize the [`RuleSet`] and [`Condition`] types instead.
@@ -166,8 +166,6 @@ pub enum ConditionSurface {
 /// [`RuleSet`]: crate::rule::RuleSet
 #[derive(Debug)]
 pub struct EvalContext<'a> {
-    /// Packet payload. Payload conditions evaluate against this.
-    pub payload: &'a pureflow_core::PacketPayload,
     /// Tags accumulated by upstream `Tag` actions for this packet.
     pub tags: &'a BTreeMap<String, ScalarValue>,
     /// Source node that produced this packet, derived from packet routing metadata.
