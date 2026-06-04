@@ -1,0 +1,181 @@
+package pureflow:rules@0.1.0;
+
+// Rule-evaluation boundary between the Pureflow host and a WASM guest.
+//
+// The guest receives a rule set and an evaluation context (including the packet
+// payload it must judge) and returns a routing decision. There are deliberately
+// no channel, port, or send/recv types in this interface: the host owns all
+// packet movement, and the guest only evaluates conditions and returns a
+// decision. There is likewise no string-eval or code entry point — conditions
+// are declarative records, never executable text.
+interface rules {
+    // A scalar literal used in conditions, tags, and execution metadata.
+    variant scalar-value {
+        text(string),
+        integer(s64),
+        float-value(f64),
+        boolean(bool),
+        null-value,
+    }
+
+    // A key/scalar pair (tags, execution metadata, and tag actions).
+    record scalar-entry {
+        key: string,
+        value: scalar-value,
+    }
+
+    // A payload field-path comparison against a scalar.
+    record field-predicate {
+        path: string,
+        value: scalar-value,
+    }
+
+    // Membership of a payload field in a set of scalars.
+    record field-in-predicate {
+        path: string,
+        values: list<scalar-value>,
+    }
+
+    // A glob match against a string payload field.
+    record field-match-predicate {
+        path: string,
+        pattern: string,
+    }
+
+    // One node in a flattened condition tree.
+    //
+    // The condition language is recursive (and / or / not), which Component
+    // Model value types cannot express directly, so the tree is flattened into
+    // an arena: combinators reference their children by index into the `nodes`
+    // list of the enclosing `condition-tree`.
+    variant condition-node {
+        // payload surface
+        field-eq(field-predicate),
+        field-neq(field-predicate),
+        field-gt(field-predicate),
+        field-lt(field-predicate),
+        field-gte(field-predicate),
+        field-lte(field-predicate),
+        field-in(field-in-predicate),
+        field-exists(string),
+        field-absent(string),
+        field-matches(field-match-predicate),
+        // tag surface
+        tag-eq(scalar-entry),
+        tag-exists(string),
+        tag-absent(string),
+        // provenance surface
+        source-node(string),
+        arrived-on-port(string),
+        hop-count-gt(u32),
+        hop-count-lte(u32),
+        // execution-context surface
+        workflow-is(string),
+        execution-metadata-eq(scalar-entry),
+        // combinators: children referenced by arena index
+        and-node(list<u32>),
+        or-node(list<u32>),
+        not-node(u32),
+        // constants
+        always,
+        never,
+    }
+
+    // A condition tree as a flat arena. `root` is the index of the top node.
+    record condition-tree {
+        nodes: list<condition-node>,
+        root: u32,
+    }
+
+    // Action taken when a rule matches, or a rule set's default action.
+    variant rule-action {
+        route(string),
+        drop,
+        dead-letter(string),
+        tag(scalar-entry),
+        halt(string),
+    }
+
+    // How a rule set evaluates its rules.
+    enum evaluation-strategy {
+        first-match,
+        all-matches,
+        score,
+    }
+
+    // One named, declarative rule.
+    record rule {
+        id: string,
+        condition: condition-tree,
+        action: rule-action,
+        priority: u32,
+        description: string,
+    }
+
+    // An ordered, inspectable collection of rules.
+    record rule-set {
+        id: string,
+        strategy: evaluation-strategy,
+        rules: list<rule>,
+        default-action: rule-action,
+        trace-conditions: bool,
+    }
+
+    // Packet payload the guest evaluates against (mirrors the host payload).
+    variant packet-payload {
+        bytes(list<u8>),
+        control(string),
+    }
+
+    // Context for one evaluation. Holds only metadata surfaces plus the payload
+    // to judge — never a channel, port, or handle of any kind.
+    record eval-context {
+        payload: packet-payload,
+        tags: list<scalar-entry>,
+        source-node: option<string>,
+        arrival-port: option<string>,
+        hop-count: u32,
+        workflow-id: string,
+        execution-metadata: list<scalar-entry>,
+    }
+
+    // Which packet surface a condition drew from, recorded per trace entry.
+    enum condition-surface {
+        payload,
+        tag,
+        provenance,
+        execution-context,
+        combinator,
+        constant,
+    }
+
+    // One per-condition trace entry, emitted when `trace-conditions` is set.
+    record condition-trace {
+        rule-id: string,
+        surface: condition-surface,
+        matched: bool,
+    }
+
+    // The decision returned for one packet.
+    record rule-decision {
+        action: rule-action,
+        matched-rule: option<string>,
+        tags-applied: list<scalar-entry>,
+        conditions-evaluated: list<condition-trace>,
+    }
+
+    // Reasons evaluation can fail. There is no variant that carries or accepts
+    // executable code — only structured diagnostics.
+    variant rule-error {
+        malformed-rule-set(string),
+        evaluation-failure(string),
+    }
+
+    // Evaluate a rule set against one packet context, returning the decision.
+    // This is the only function on the boundary: no packet I/O, no host effects.
+    evaluate: func(rule-set: rule-set, context: eval-context) -> result<rule-decision, rule-error>;
+}
+
+world pureflow-rules-node {
+    export rules;
+}

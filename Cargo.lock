@@ -1962,6 +1962,7 @@ dependencies = [
  "serde_json",
  "wasmtime",
  "wit-bindgen 0.57.1",
+ "wit-parser 0.247.0",
 ]
 
 [[package]]
