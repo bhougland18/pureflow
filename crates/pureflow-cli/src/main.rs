@@ -1267,9 +1267,9 @@ mod tests {
         let disabled: Option<Targets> =
             tracing_targets_from_env(|_name: &str| None).expect("missing env should parse");
         let explicit_off: Option<Targets> =
-            tracing_targets_from_value(CONDUIT_TRACE_ENV, "off").expect("off should parse");
+            tracing_targets_from_value(LEGACY_CONDUIT_TRACE_ENV, "off").expect("off should parse");
         let explicit_true: Option<Targets> =
-            tracing_targets_from_value(CONDUIT_TRACE_ENV, "true").expect("true should parse");
+            tracing_targets_from_value(LEGACY_CONDUIT_TRACE_ENV, "true").expect("true should parse");
         let rust_log_directive: Option<Targets> =
             tracing_targets_from_value(RUST_LOG_ENV, "pureflow.runtime=debug")
                 .expect("target directive should parse");
@@ -1283,7 +1283,7 @@ mod tests {
     #[test]
     fn pureflow_trace_takes_precedence_over_rust_log() {
         let targets: Option<Targets> = tracing_targets_from_env(|name: &str| match name {
-            CONDUIT_TRACE_ENV => Some(String::from("off")),
+            LEGACY_CONDUIT_TRACE_ENV => Some(String::from("off")),
             RUST_LOG_ENV => Some(String::from("trace")),
             _ => None,
         })
