@@ -1,0 +1,29 @@
+{
+  "id": "payment-router-audit",
+  "strategy": "FirstMatch",
+  "rules": [
+    {
+      "id": "high-value",
+      "condition": { "FieldGte": { "path": "amount", "value": { "Integer": 10000 } } },
+      "action": { "Route": "high-value-out" },
+      "priority": 10,
+      "description": "Route payments of $10,000 or more to the high-value lane"
+    },
+    {
+      "id": "priority-tagged",
+      "condition": { "TagEq": { "key": "priority", "value": { "String": "high" } } },
+      "action": { "Route": "fast-path-out" },
+      "priority": 20,
+      "description": "Route packets tagged priority=high to the fast path"
+    },
+    {
+      "id": "standard",
+      "condition": "Always",
+      "action": { "Route": "standard-out" },
+      "priority": 30,
+      "description": "Everything else takes the standard lane"
+    }
+  ],
+  "default_action": "Drop",
+  "trace_conditions": true
+}

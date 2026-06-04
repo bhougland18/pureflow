@@ -1867,10 +1867,12 @@ dependencies = [
  "futures",
  "pureflow-contract",
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-runtime",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
+ "serde_json",
 ]
 
 [[package]]
