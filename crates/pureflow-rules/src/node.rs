@@ -6,7 +6,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use futures::future::BoxFuture;
 use pureflow_core::{
-    NodeExecutor, PacketPayload, PureflowError, PortPacket, PortsIn, PortsOut, Result,
+    CancellationToken, ConditionSurfaceRecord, ConditionTrace, MetadataRecord, MetadataSink,
+    NodeExecutor, PacketPayload, PortPacket, PortSendError, PortsIn, PortsOut, PureflowError,
+    Result, RuleEvalAction, RuleEvalRecord, RuleEvalStrategy,
     context::NodeContext,
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
     ports::PortRecvError,
@@ -15,9 +17,9 @@ use pureflow_types::{MessageId, PortId};
 
 use crate::{
     action::RuleAction,
-    condition::{EvalContext, ScalarValue},
+    condition::{ConditionSurface, EvalContext, ScalarValue},
     eval::RuleSetEvaluator,
-    rule::RuleSet,
+    rule::{EvaluationStrategy, RuleDecision, RuleSet},
 };
 
 /// Built-in contract identifier for the native rule node.
@@ -53,19 +55,44 @@ const IN_PORT: &str = "in";
 pub struct RuleNode {
     rule_set: Arc<RuleSet>,
     evaluator: RuleSetEvaluator,
+    /// Optional metadata sink for emitting `RuleEvalRecord` entries.
+    ///
+    /// Pass the same `Arc<M>` used with the workflow runner so that
+    /// `RuleEval` records appear in the same JSONL stream as lifecycle and
+    /// message boundary records.
+    metadata_sink: Option<Arc<dyn MetadataSink + Send + Sync>>,
     /// Monotonic counter used to generate unique message ids within one run.
     packet_counter: AtomicU64,
 }
 
 impl RuleNode {
     /// Create a rule node that evaluates `rule_set` for every incoming packet.
+    ///
+    /// No metadata records are emitted without a sink. Use
+    /// [`with_metadata_sink`](Self::with_metadata_sink) to enable
+    /// `RuleEvalRecord` emission.
     #[must_use]
     pub fn new(rule_set: Arc<RuleSet>) -> Self {
         Self {
             rule_set,
             evaluator: RuleSetEvaluator,
+            metadata_sink: None,
             packet_counter: AtomicU64::new(0),
         }
+    }
+
+    /// Attach a metadata sink so the node emits [`RuleEvalRecord`] entries.
+    ///
+    /// Pass the same `Arc<M>` you will pass to the workflow runner. Records
+    /// are emitted after evaluation and before the routing send, so they are
+    /// always written even if the send is later cancelled.
+    #[must_use]
+    pub fn with_metadata_sink<M>(mut self, sink: Arc<M>) -> Self
+    where
+        M: MetadataSink + Send + Sync + 'static,
+    {
+        self.metadata_sink = Some(sink);
+        self
     }
 
     /// The rule set this node evaluates.
@@ -81,6 +108,7 @@ impl std::fmt::Debug for RuleNode {
             .field("rule_set_id", &self.rule_set.id)
             .field("strategy", &self.rule_set.strategy)
             .field("rules", &self.rule_set.rules.len())
+            .field("has_metadata_sink", &self.metadata_sink.is_some())
             .finish()
     }
 }
@@ -144,6 +172,20 @@ impl NodeExecutor for RuleNode {
                     .evaluate(&self.rule_set, &packet, &eval_ctx)
                     .map_err(|e| PureflowError::execution(format!("rule evaluation error: {e}")))?;
 
+                // Emit the RuleEvalRecord BEFORE executing the send.
+                // This guarantees the record is written even if the send is
+                // later cancelled — the finalize guarantee described in the proposal.
+                if let Some(sink) = &self.metadata_sink {
+                    let record = build_rule_eval_record(
+                        &ctx,
+                        &self.rule_set,
+                        &packet,
+                        &decision,
+                        &tags,
+                    );
+                    let _ = sink.record(&MetadataRecord::RuleEval(record));
+                }
+
                 // Execute the routing decision.
                 let seq = self.packet_counter.fetch_add(1, Ordering::Relaxed);
                 execute_action(&decision.action, &ctx, seq, packet, &outputs, &cancellation).await?;
@@ -163,6 +205,77 @@ impl NodeExecutor for RuleNode {
     }
 }
 
+/// Build a `RuleEvalRecord` from a completed evaluation, ready for the metadata sink.
+fn build_rule_eval_record(
+    ctx: &NodeContext,
+    rule_set: &RuleSet,
+    packet: &PortPacket,
+    decision: &RuleDecision,
+    tags_at_eval: &BTreeMap<String, ScalarValue>,
+) -> RuleEvalRecord {
+    let source_node = packet
+        .metadata()
+        .route()
+        .source()
+        .map(|ep| ep.node_id().clone());
+    let arrival_port = Some(packet.metadata().route().target().port_id().clone());
+
+    RuleEvalRecord {
+        node_id: ctx.node_id().clone(),
+        workflow_id: ctx.workflow_id().clone(),
+        execution: ctx.execution().clone(),
+        rule_set_id: rule_set.id.clone(),
+        strategy: strategy_to_eval(rule_set.strategy),
+        matched_rule: decision.matched_rule.clone(),
+        action_taken: action_to_eval(&decision.action),
+        rules_evaluated: rule_set.rules.len() as u32,
+        tags_applied: decision
+            .tags_applied
+            .iter()
+            .map(|(k, v)| (k.clone(), scalar_to_json(v)))
+            .collect(),
+        source_node,
+        arrival_port,
+        hop_count: 0,
+        tags_present_at_eval: tags_at_eval
+            .iter()
+            .map(|(k, v)| (k.clone(), scalar_to_json(v)))
+            .collect(),
+        conditions_evaluated: decision.conditions_evaluated.clone(),
+    }
+}
+
+fn strategy_to_eval(s: EvaluationStrategy) -> RuleEvalStrategy {
+    match s {
+        EvaluationStrategy::FirstMatch => RuleEvalStrategy::FirstMatch,
+        EvaluationStrategy::AllMatches => RuleEvalStrategy::AllMatches,
+        EvaluationStrategy::Score => RuleEvalStrategy::Score,
+    }
+}
+
+fn action_to_eval(action: &RuleAction) -> RuleEvalAction {
+    match action {
+        RuleAction::Route(port) => RuleEvalAction::Route(port.clone()),
+        RuleAction::Drop => RuleEvalAction::Drop,
+        RuleAction::DeadLetter(reason) => RuleEvalAction::DeadLetter(reason.clone()),
+        RuleAction::Tag { key, value } => RuleEvalAction::Tag {
+            key: key.clone(),
+            value: scalar_to_json(value).to_string(),
+        },
+        RuleAction::Halt(msg) => RuleEvalAction::Halt(msg.clone()),
+    }
+}
+
+fn scalar_to_json(v: &ScalarValue) -> serde_json::Value {
+    match v {
+        ScalarValue::String(s) => serde_json::Value::String(s.clone()),
+        ScalarValue::Integer(i) => serde_json::json!(*i),
+        ScalarValue::Float(f) => serde_json::json!(*f),
+        ScalarValue::Boolean(b) => serde_json::Value::Bool(*b),
+        ScalarValue::Null => serde_json::Value::Null,
+    }
+}
+
 /// Execute one routing action, consuming the packet.
 async fn execute_action(
     action: &RuleAction,
@@ -170,13 +283,13 @@ async fn execute_action(
     seq: u64,
     packet: PortPacket,
     outputs: &PortsOut,
-    cancellation: &pureflow_core::CancellationToken,
+    cancellation: &CancellationToken,
 ) -> Result<()> {
     match action {
         RuleAction::Route(port_id) => {
             let forwarded = forward_packet(ctx, port_id, seq, packet)?;
             outputs.send(port_id, forwarded, cancellation).await.map_err(
-                |e: pureflow_core::PortSendError| PureflowError::execution(e.to_string()),
+                |e: PortSendError| PureflowError::execution(e.to_string()),
             )?;
         }
         RuleAction::Drop => {
@@ -187,7 +300,7 @@ async fn execute_action(
                 .map_err(|e| PureflowError::execution(format!("invalid port id: {e}")))?;
             let forwarded = forward_packet(ctx, &dead_port, seq, packet)?;
             outputs.send(&dead_port, forwarded, cancellation).await.map_err(
-                |e: pureflow_core::PortSendError| {
+                |e: PortSendError| {
                     PureflowError::execution(format!("dead-letter send failed ({reason}): {e}"))
                 },
             )?;
@@ -425,5 +538,103 @@ mod tests {
     #[test]
     fn rule_node_contract_id_is_stable() {
         assert_eq!(CONTRACT_ID, "pureflow.rules.v1");
+    }
+
+    #[test]
+    fn rule_node_emits_rule_eval_record_to_metadata_sink() {
+        let rules = vec![
+            Rule::new("high", Condition::FieldGte {
+                path: field("amount"),
+                value: ScalarValue::Integer(10000),
+            }, RuleAction::Route(port_id("high-out")), 10, "high value").unwrap(),
+            Rule::new("std", Condition::Always, RuleAction::Route(port_id("std-out")), 20, "standard").unwrap(),
+        ];
+        let rule_set = Arc::new(
+            RuleSet::new("payment-router", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+        );
+
+        let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
+        let router = Arc::new(
+            RuleNode::new(rule_set).with_metadata_sink(metadata_sink.clone())
+        );
+
+        let high_received = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let std_received = Arc::new(std::sync::Mutex::new(Vec::new()));
+
+        let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
+            (node_id("source"), TestExecutor::Source { payload: json!({"amount": 50000}) }),
+            (node_id("router"), TestExecutor::Router(router)),
+            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
+            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+        ]));
+        let workflow = routing_workflow();
+        let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-emit-1").unwrap());
+
+        let summary = block_on(
+            run_workflow_with_registry_and_metadata_sink_summary(
+                &workflow, &execution, &registry, metadata_sink.clone()
+            )
+        ).expect("workflow should complete");
+
+        assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
+
+        // Drop the registry (and the router it contains) so the Arc has exactly one owner.
+        drop(registry);
+
+        // Read the JSONL output and check for a rule_eval record.
+        let bytes = Arc::try_unwrap(metadata_sink).unwrap().into_inner().unwrap();
+        let jsonl = String::from_utf8(bytes).unwrap();
+        let rule_eval_lines: Vec<&str> = jsonl.lines()
+            .filter(|line| line.contains("\"record_type\":\"rule_eval\""))
+            .collect();
+
+        assert_eq!(rule_eval_lines.len(), 1, "exactly one RuleEval record expected");
+
+        let record: serde_json::Value = serde_json::from_str(rule_eval_lines[0]).unwrap();
+        assert_eq!(record["rule_set_id"], "payment-router");
+        assert_eq!(record["strategy"], "first_match");
+        assert_eq!(record["matched_rule"], "high");
+        assert_eq!(record["action_taken"]["kind"], "route");
+        assert_eq!(record["action_taken"]["port"], "high-out");
+        assert_eq!(record["rules_evaluated"], 2);
+    }
+
+    #[test]
+    fn rule_node_without_sink_emits_no_records() {
+        // No sink attached — workflow still completes, no metadata records from rules.
+        let rules = vec![
+            Rule::new("r", Condition::Always, RuleAction::Route(port_id("std-out")), 10, "").unwrap(),
+        ];
+        let rule_set = Arc::new(
+            RuleSet::new("rs", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+        );
+        let router = Arc::new(RuleNode::new(rule_set));
+        let high_received = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let std_received = Arc::new(std::sync::Mutex::new(Vec::new()));
+
+        let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
+            (node_id("source"), TestExecutor::Source { payload: json!({}) }),
+            (node_id("router"), TestExecutor::Router(router)),
+            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
+            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+        ]));
+        let workflow = routing_workflow();
+        let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-no-sink").unwrap());
+        let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
+
+        let summary = block_on(
+            run_workflow_with_registry_and_metadata_sink_summary(
+                &workflow, &execution, &registry, metadata_sink.clone()
+            )
+        ).expect("workflow should complete");
+
+        assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
+        drop(registry);
+        let bytes = Arc::try_unwrap(metadata_sink).unwrap().into_inner().unwrap();
+        let jsonl = String::from_utf8(bytes).unwrap();
+        let rule_eval_count = jsonl.lines()
+            .filter(|l| l.contains("\"record_type\":\"rule_eval\""))
+            .count();
+        assert_eq!(rule_eval_count, 0, "no RuleEval records expected without sink");
     }
 }
