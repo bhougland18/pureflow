@@ -1789,6 +1789,7 @@ dependencies = [
  "insta",
  "pureflow-contract",
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
@@ -1799,8 +1800,13 @@ dependencies = [
 name = "pureflow-rules"
 version = "0.1.0"
 dependencies = [
+ "bytes",
+ "futures",
  "pureflow-core",
+ "pureflow-engine",
+ "pureflow-test-kit",
  "pureflow-types",
+ "pureflow-workflow",
  "serde",
  "serde_json",
 ]
@@ -1864,12 +1870,15 @@ dependencies = [
 name = "pureflow-workflow-format"
 version = "0.1.0"
 dependencies = [
+ "futures",
+ "pureflow-rules",
  "pureflow-types",
  "pureflow-workflow",
  "quickcheck",
  "serde",
  "serde_json",
  "serde_yml",
+ "tempfile",
  "toml",
 ]
 

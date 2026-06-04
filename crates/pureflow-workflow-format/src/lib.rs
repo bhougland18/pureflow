@@ -10,10 +10,12 @@ pub use rule_source::{
     EmbeddedSource, LocalFsSource, RuleSetSource, RuleSourceError, SourceRegistry,
 };
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt;
 use std::num::NonZeroUsize;
 
+use pureflow_rules::RuleSet;
 use pureflow_types::{IdentifierError, NodeId, PortId, WorkflowId};
 use pureflow_workflow::{
     EdgeDefinition, EdgeEndpoint, NodeDefinition, WorkflowDefinition, WorkflowValidationError,
@@ -24,7 +26,7 @@ use serde::{Deserialize, Serialize};
 pub const CURRENT_PUREFLOW_VERSION: &str = "1";
 
 /// Raw workflow document after parser-level decoding.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawWorkflowDefinition {
     /// Required Pureflow workflow format version.
@@ -73,10 +75,153 @@ impl RawWorkflowDefinition {
         WorkflowDefinition::from_parts(workflow_id, nodes, edges)
             .map_err(|source: WorkflowValidationError| WorkflowFormatError::Workflow { source })
     }
+
+    /// Resolve every node's `rule_set_ref` URI into an inline `rule_set`,
+    /// returning a new raw document with all references inlined.
+    ///
+    /// Inline rule sets that are already present are validated by parsing them
+    /// into a [`RuleSet`] and re-serialising the canonical form, so the returned
+    /// document is guaranteed to carry only well-formed rule sets. After this
+    /// call no node carries a `rule_set_ref`; references have been replaced by
+    /// the resolved inline rule set. This is the inlining step a caller performs
+    /// before handing the document to graph validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`WorkflowFormatError::RuleSet`] if a node specifies both an
+    /// inline rule set and a reference, if a reference fails to resolve, or if
+    /// an inline rule set is not a valid [`RuleSet`].
+    pub async fn resolve_rule_sets(
+        &self,
+        registry: &SourceRegistry,
+    ) -> Result<RawWorkflowDefinition, WorkflowFormatError> {
+        let mut resolved_nodes: Vec<RawNodeDefinition> = Vec::with_capacity(self.nodes.len());
+        for (node_index, node) in self.nodes.iter().enumerate() {
+            let rule_set: Option<RuleSet> = resolve_node_rule_set(node_index, node, registry).await?;
+            let rule_set_json: Option<serde_json::Value> = match rule_set {
+                Some(rule_set) => Some(serde_json::to_value(&rule_set).map_err(
+                    |source: serde_json::Error| WorkflowFormatError::RuleSet {
+                        node_index,
+                        source: RuleSetBindingError::Parse {
+                            reason: source.to_string(),
+                        },
+                    },
+                )?),
+                None => None,
+            };
+            resolved_nodes.push(RawNodeDefinition {
+                id: node.id.clone(),
+                inputs: node.inputs.clone(),
+                outputs: node.outputs.clone(),
+                rule_set: rule_set_json,
+                rule_set_ref: None,
+            });
+        }
+
+        Ok(RawWorkflowDefinition {
+            pureflow_version: self.pureflow_version.clone(),
+            id: self.id.clone(),
+            nodes: resolved_nodes,
+            edges: self.edges.clone(),
+        })
+    }
+
+    /// Resolve all rule sets and validate the workflow graph in one pass.
+    ///
+    /// Returns the validated [`WorkflowDefinition`] together with the typed
+    /// [`RuleSet`] resolved for each node that declared one (keyed by node id).
+    /// Nodes without a rule set are absent from the map.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same [`WorkflowFormatError`] variants as [`Self::to_workflow`]
+    /// for version, identifier, and graph failures, plus
+    /// [`WorkflowFormatError::RuleSet`] for rule set conflicts, resolution
+    /// failures, or malformed inline rule sets.
+    pub async fn load_workflow(
+        &self,
+        registry: &SourceRegistry,
+    ) -> Result<LoadedWorkflow, WorkflowFormatError> {
+        let workflow: WorkflowDefinition = self.to_workflow()?;
+
+        let mut rule_sets: BTreeMap<NodeId, RuleSet> = BTreeMap::new();
+        for (node_index, node) in self.nodes.iter().enumerate() {
+            let Some(rule_set) = resolve_node_rule_set(node_index, node, registry).await? else {
+                continue;
+            };
+            // `to_workflow` already validated every node identifier, so this
+            // re-parse cannot fail; map any error into the same identifier
+            // context rather than panicking.
+            let node_id: NodeId =
+                NodeId::new(node.id.clone()).map_err(|source: IdentifierError| {
+                    WorkflowFormatError::Identifier {
+                        context: IdentifierContext::Node { node_index },
+                        source,
+                    }
+                })?;
+            rule_sets.insert(node_id, rule_set);
+        }
+
+        Ok(LoadedWorkflow {
+            workflow,
+            rule_sets,
+        })
+    }
+}
+
+/// A validated workflow paired with the rule sets resolved for its nodes.
+///
+/// Produced by [`RawWorkflowDefinition::load_workflow`]. The `rule_sets` map
+/// only contains entries for nodes that declared an inline `rule_set` or a
+/// resolvable `rule_set_ref`.
+#[derive(Debug, Clone)]
+pub struct LoadedWorkflow {
+    /// Validated workflow graph.
+    pub workflow: WorkflowDefinition,
+    /// Resolved rule sets keyed by the owning node identifier.
+    pub rule_sets: BTreeMap<NodeId, RuleSet>,
+}
+
+/// Resolve the rule set for a single raw node, if any.
+///
+/// Enforces that `rule_set` and `rule_set_ref` are mutually exclusive, parses
+/// an inline rule set, or resolves a reference through the registry.
+async fn resolve_node_rule_set(
+    node_index: usize,
+    node: &RawNodeDefinition,
+    registry: &SourceRegistry,
+) -> Result<Option<RuleSet>, WorkflowFormatError> {
+    match (&node.rule_set, &node.rule_set_ref) {
+        (Some(_), Some(_)) => Err(WorkflowFormatError::RuleSet {
+            node_index,
+            source: RuleSetBindingError::Conflict,
+        }),
+        (Some(inline), None) => {
+            let rule_set: RuleSet = serde_json::from_value(inline.clone()).map_err(
+                |source: serde_json::Error| WorkflowFormatError::RuleSet {
+                    node_index,
+                    source: RuleSetBindingError::Parse {
+                        reason: source.to_string(),
+                    },
+                },
+            )?;
+            Ok(Some(rule_set))
+        }
+        (None, Some(ref_uri)) => {
+            let rule_set: RuleSet = registry.load(ref_uri).await.map_err(
+                |source: RuleSourceError| WorkflowFormatError::RuleSet {
+                    node_index,
+                    source: RuleSetBindingError::Resolve { source },
+                },
+            )?;
+            Ok(Some(rule_set))
+        }
+        (None, None) => Ok(None),
+    }
 }
 
 /// Raw node declaration after parser-level decoding.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawNodeDefinition {
     /// Node identifier.
@@ -85,6 +230,14 @@ pub struct RawNodeDefinition {
     pub inputs: Vec<String>,
     /// Declared output port identifiers.
     pub outputs: Vec<String>,
+    /// Optional inline rule set for this node, embedded directly in the
+    /// workflow document as raw JSON. Mutually exclusive with `rule_set_ref`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule_set: Option<serde_json::Value>,
+    /// Optional side-car rule set reference URI resolved through a
+    /// [`SourceRegistry`] at load time. Mutually exclusive with `rule_set`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule_set_ref: Option<String>,
 }
 
 /// Raw endpoint declaration after parser-level decoding.
@@ -205,6 +358,51 @@ pub enum WorkflowFormatError {
         /// Workflow validation failure.
         source: WorkflowValidationError,
     },
+    /// A node's rule set could not be bound (conflict, resolution, or parse).
+    RuleSet {
+        /// Zero-based node index.
+        node_index: usize,
+        /// Rule set binding failure.
+        source: RuleSetBindingError,
+    },
+}
+
+/// Failure binding a node's inline or referenced rule set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuleSetBindingError {
+    /// The node declared both an inline `rule_set` and a `rule_set_ref`.
+    Conflict,
+    /// A `rule_set_ref` URI failed to resolve through the source registry.
+    Resolve {
+        /// Underlying source resolution failure.
+        source: RuleSourceError,
+    },
+    /// An inline `rule_set` was not a valid rule set document.
+    Parse {
+        /// Human-readable description of the parse failure.
+        reason: String,
+    },
+}
+
+impl fmt::Display for RuleSetBindingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Conflict => {
+                f.write_str("node declares both an inline rule_set and a rule_set_ref")
+            }
+            Self::Resolve { source } => write!(f, "failed to resolve rule_set_ref: {source}"),
+            Self::Parse { reason } => write!(f, "inline rule_set is invalid: {reason}"),
+        }
+    }
+}
+
+impl Error for RuleSetBindingError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Resolve { source } => Some(source),
+            Self::Conflict | Self::Parse { .. } => None,
+        }
+    }
 }
 
 /// Error returned while decoding or encoding canonical JSON workflow documents.
@@ -420,6 +618,9 @@ impl fmt::Display for WorkflowFormatError {
                 "edge {edge_index} explicit capacity must be greater than zero, got {capacity}"
             ),
             Self::Workflow { source } => write!(f, "workflow validation failed: {source}"),
+            Self::RuleSet { node_index, source } => {
+                write!(f, "node {node_index} rule set is invalid: {source}")
+            }
         }
     }
 }
@@ -429,6 +630,7 @@ impl Error for WorkflowFormatError {
         match self {
             Self::Identifier { source, .. } => Some(source),
             Self::Workflow { source } => Some(source),
+            Self::RuleSet { source, .. } => Some(source),
             Self::MissingVersion
             | Self::UnsupportedVersion { .. }
             | Self::InvalidEdgeCapacity { .. } => None,
@@ -559,11 +761,15 @@ mod tests {
                     id: "source".to_owned(),
                     inputs: Vec::new(),
                     outputs: vec!["out".to_owned()],
+                    rule_set: None,
+                    rule_set_ref: None,
                 },
                 RawNodeDefinition {
                     id: "sink".to_owned(),
                     inputs: vec!["in".to_owned()],
                     outputs: Vec::new(),
+                    rule_set: None,
+                    rule_set_ref: None,
                 },
             ],
             edges: vec![RawEdgeDefinition {
@@ -687,6 +893,8 @@ mod tests {
                         .iter()
                         .map(ToString::to_string)
                         .collect(),
+                    rule_set: None,
+                    rule_set_ref: None,
                 })
                 .collect(),
             edges: workflow
@@ -846,11 +1054,15 @@ mod tests {
                     id: "first".to_owned(),
                     inputs: vec!["in".to_owned()],
                     outputs: vec!["out".to_owned()],
+                    rule_set: None,
+                    rule_set_ref: None,
                 },
                 RawNodeDefinition {
                     id: "second".to_owned(),
                     inputs: vec!["in".to_owned()],
                     outputs: vec!["out".to_owned()],
+                    rule_set: None,
+                    rule_set_ref: None,
                 },
             ],
             edges: vec![
@@ -1032,6 +1244,199 @@ mod tests {
             raw_workflow_from_json_str(input).expect_err("unknown field should fail");
 
         assert!(matches!(err, WorkflowJsonError::Decode { .. }));
+    }
+
+    // --- Rule set loading (pu-rna) ---------------------------------------
+
+    use pureflow_rules::{Condition, EvaluationStrategy, Rule, RuleAction, RuleSet};
+
+    fn sample_rule_set() -> RuleSet {
+        RuleSet::new(
+            "router",
+            EvaluationStrategy::FirstMatch,
+            vec![Rule::new(
+                "always-route",
+                Condition::Always,
+                RuleAction::Route(PortId::new("out").expect("port id")),
+                10,
+                "route everything",
+            )
+            .expect("rule is valid")],
+            RuleAction::Drop,
+            false,
+        )
+        .expect("rule set is valid")
+    }
+
+    /// Single-node workflow whose node carries no rule set yet. Callers set the
+    /// `rule_set` / `rule_set_ref` fields to exercise loading.
+    fn single_node_raw() -> RawWorkflowDefinition {
+        RawWorkflowDefinition {
+            pureflow_version: Some(CURRENT_PUREFLOW_VERSION.to_owned()),
+            id: "flow".to_owned(),
+            nodes: vec![RawNodeDefinition {
+                id: "router".to_owned(),
+                inputs: vec!["in".to_owned()],
+                outputs: vec!["out".to_owned()],
+                rule_set: None,
+                rule_set_ref: None,
+            }],
+            edges: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn load_workflow_binds_inline_rule_set() {
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set =
+            Some(serde_json::to_value(sample_rule_set()).expect("rule set serializes"));
+
+        let registry = SourceRegistry::new();
+        let loaded: LoadedWorkflow = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect("inline rule set should load");
+
+        let node_id: NodeId = NodeId::new("router").expect("node id");
+        assert_eq!(loaded.workflow.id().as_str(), "flow");
+        assert_eq!(loaded.rule_sets.len(), 1);
+        assert_eq!(loaded.rule_sets[&node_id], sample_rule_set());
+    }
+
+    #[test]
+    fn load_workflow_omits_nodes_without_rule_sets() {
+        let raw: RawWorkflowDefinition = single_node_raw();
+
+        let registry = SourceRegistry::new();
+        let loaded: LoadedWorkflow = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect("workflow without rule sets should load");
+
+        assert!(loaded.rule_sets.is_empty());
+    }
+
+    #[test]
+    fn load_workflow_resolves_rule_set_ref_via_registry() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let content = serde_json::to_string(&sample_rule_set()).expect("serializes");
+        std::fs::write(dir.path().join("router.rules.json"), content).expect("write file");
+
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set_ref = Some("router.rules.json".to_owned());
+
+        let registry = SourceRegistry::with_base_dir(dir.path());
+        let loaded: LoadedWorkflow = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect("referenced rule set should resolve");
+
+        let node_id: NodeId = NodeId::new("router").expect("node id");
+        assert_eq!(loaded.rule_sets[&node_id], sample_rule_set());
+    }
+
+    #[test]
+    fn load_workflow_rejects_node_with_inline_and_ref() {
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set =
+            Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
+        raw.nodes[0].rule_set_ref = Some("router.rules.json".to_owned());
+
+        let registry = SourceRegistry::new();
+        let err: WorkflowFormatError =
+            futures::executor::block_on(raw.load_workflow(&registry))
+                .expect_err("conflicting rule set sources must fail");
+
+        assert_eq!(
+            err,
+            WorkflowFormatError::RuleSet {
+                node_index: 0,
+                source: RuleSetBindingError::Conflict,
+            }
+        );
+    }
+
+    #[test]
+    fn load_workflow_rejects_malformed_inline_rule_set() {
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set = Some(serde_json::json!({ "not": "a rule set" }));
+
+        let registry = SourceRegistry::new();
+        let err: WorkflowFormatError =
+            futures::executor::block_on(raw.load_workflow(&registry))
+                .expect_err("malformed inline rule set must fail");
+
+        assert!(matches!(
+            err,
+            WorkflowFormatError::RuleSet {
+                node_index: 0,
+                source: RuleSetBindingError::Parse { .. }
+            }
+        ));
+    }
+
+    #[test]
+    fn load_workflow_surfaces_unknown_scheme_resolution_error() {
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set_ref = Some("guardiandb://acct/rules".to_owned());
+
+        let registry = SourceRegistry::new();
+        let err: WorkflowFormatError =
+            futures::executor::block_on(raw.load_workflow(&registry))
+                .expect_err("unknown scheme must fail");
+
+        assert!(matches!(
+            err,
+            WorkflowFormatError::RuleSet {
+                node_index: 0,
+                source: RuleSetBindingError::Resolve {
+                    source: RuleSourceError::UnknownScheme { .. }
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn resolve_rule_sets_inlines_references() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let content = serde_json::to_string(&sample_rule_set()).expect("serializes");
+        std::fs::write(dir.path().join("router.rules.json"), content).expect("write file");
+
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set_ref = Some("router.rules.json".to_owned());
+
+        let registry = SourceRegistry::with_base_dir(dir.path());
+        let resolved: RawWorkflowDefinition =
+            futures::executor::block_on(raw.resolve_rule_sets(&registry))
+                .expect("reference should inline");
+
+        // The reference is gone; the inline rule set is present and parses back
+        // to the original rule set.
+        assert!(resolved.nodes[0].rule_set_ref.is_none());
+        let inlined: &serde_json::Value = resolved.nodes[0]
+            .rule_set
+            .as_ref()
+            .expect("rule set inlined");
+        let parsed: RuleSet =
+            serde_json::from_value(inlined.clone()).expect("inlined rule set parses");
+        assert_eq!(parsed, sample_rule_set());
+    }
+
+    #[test]
+    fn raw_node_with_inline_rule_set_round_trips_through_json() {
+        let mut raw: RawWorkflowDefinition = single_node_raw();
+        raw.nodes[0].rule_set =
+            Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
+
+        let encoded: String =
+            raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
+        let decoded: RawWorkflowDefinition =
+            raw_workflow_from_json_str(&encoded).expect("raw workflow decodes");
+
+        assert_eq!(decoded, raw);
+    }
+
+    #[test]
+    fn raw_node_without_rule_set_omits_fields_in_json() {
+        let raw: RawWorkflowDefinition = single_node_raw();
+        let encoded: String =
+            raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
+
+        assert!(!encoded.contains("rule_set"));
     }
 
     #[cfg(feature = "toml")]
