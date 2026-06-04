@@ -5,6 +5,11 @@
 //! these raw structs without adding JSON, TOML, or YAML dependencies to
 //! `pureflow-workflow`.
 
+pub mod rule_source;
+pub use rule_source::{
+    EmbeddedSource, LocalFsSource, RuleSetSource, RuleSourceError, SourceRegistry,
+};
+
 use std::error::Error;
 use std::fmt;
 use std::num::NonZeroUsize;
