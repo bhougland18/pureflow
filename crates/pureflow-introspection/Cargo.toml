@@ -10,6 +10,7 @@ description = "Read-only workflow introspection projections with optional JSON s
 [dependencies]
 pureflow-contract.workspace = true
 pureflow-core.workspace = true
+pureflow-rules.workspace = true
 pureflow-types.workspace = true
 pureflow-workflow.workspace = true
 serde_json = { workspace = true, optional = true }
