@@ -37,10 +37,12 @@ pub mod action;
 pub mod condition;
 pub mod error;
 pub mod eval;
+pub mod node;
 pub mod rule;
 
 pub use action::RuleAction;
 pub use condition::{Condition, ConditionSurface, EvalContext, FieldPath, GlobPattern, ScalarValue};
 pub use error::RuleError;
 pub use eval::RuleSetEvaluator;
+pub use node::{CONTRACT_ID, RuleNode};
 pub use rule::{EvaluationStrategy, Rule, RuleDecision, RuleSet};
