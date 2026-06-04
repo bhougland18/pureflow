@@ -108,6 +108,8 @@ macro_rules! id_type {
     ($name:ident, $kind:expr, $docs:literal) => {
         #[doc = $docs]
         #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[cfg_attr(feature = "serde", serde(try_from = "String", into = "String"))]
         pub struct $name(String);
 
         impl $name {
@@ -152,6 +154,14 @@ macro_rules! id_type {
         impl From<$name> for String {
             fn from(value: $name) -> Self {
                 value.0
+            }
+        }
+
+        impl TryFrom<String> for $name {
+            type Error = IdentifierError;
+
+            fn try_from(value: String) -> Result<Self, Self::Error> {
+                Self::new(value)
             }
         }
     };

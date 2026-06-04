@@ -20,10 +20,11 @@ pub use error::{
 };
 pub use message::PacketPayload;
 pub use metadata::{
-    DeadlockDiagnosticMetadata, ErrorDiagnosticMetadata, ErrorMetadataKind, ErrorMetadataRecord,
-    ExternalEffectMetadataKind, ExternalEffectMetadataRecord, JsonlMetadataSink,
-    MessageBoundaryKind, MessageBoundaryRecord, MetadataRecord, MetadataSink, MetadataTier,
-    NoopMetadataSink, TieredMetadataPolicy, TieredMetadataSink, metadata_record_to_json_value,
+    ConditionSurfaceRecord, ConditionTrace, DeadlockDiagnosticMetadata, ErrorDiagnosticMetadata,
+    ErrorMetadataKind, ErrorMetadataRecord, ExternalEffectMetadataKind,
+    ExternalEffectMetadataRecord, JsonlMetadataSink, MessageBoundaryKind, MessageBoundaryRecord,
+    MetadataRecord, MetadataSink, MetadataTier, NoopMetadataSink, RuleEvalAction, RuleEvalRecord,
+    RuleEvalStrategy, TieredMetadataPolicy, TieredMetadataSink, metadata_record_to_json_value,
 };
 pub use ports::{
     InputPortHandle, OutputPacketValidator, OutputPortHandle, PortPacket, PortRecvError,

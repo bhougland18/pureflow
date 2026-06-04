@@ -1,0 +1,24 @@
+[package]
+name = "pureflow-rules"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+version.workspace = true
+description = "Declarative rules engine types and evaluator for Pureflow."
+
+[features]
+serde = ["dep:serde", "pureflow-types/serde"]
+
+[dependencies]
+pureflow-core = { workspace = true }
+pureflow-types = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+serde_json = { workspace = true }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+pureflow-engine = { workspace = true }
+pureflow-test-kit = { workspace = true }
+pureflow-workflow = { workspace = true }
