@@ -9,6 +9,7 @@ description = "Node contract metadata and port-level schema validation for the P
 
 [dependencies]
 pureflow-core.workspace = true
+pureflow-rules.workspace = true
 pureflow-types.workspace = true
 pureflow-workflow.workspace = true
 

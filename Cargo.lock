@@ -1747,6 +1747,7 @@ name = "pureflow-contract"
 version = "0.1.0"
 dependencies = [
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
