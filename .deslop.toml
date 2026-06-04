@@ -1,0 +1,4 @@
+# Repository-local Deslop scan settings.
+
+rust_async_experimental = true
+suppressed_paths = ["target"]

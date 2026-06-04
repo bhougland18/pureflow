@@ -1,0 +1,32 @@
+{
+  "pureflow_version": "1",
+  "id": "replay-branch-eval-workload",
+  "nodes": [
+    { "id": "source",    "inputs": [],         "outputs": ["out"] },
+    { "id": "branch-a",  "inputs": ["in"],     "outputs": ["out"] },
+    { "id": "branch-b",  "inputs": ["in"],     "outputs": ["out"] },
+    { "id": "evaluator", "inputs": ["a", "b"], "outputs": []      }
+  ],
+  "edges": [
+    {
+      "source": { "node": "source",   "port": "out" },
+      "target": { "node": "branch-a", "port": "in"  },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "source",   "port": "out" },
+      "target": { "node": "branch-b", "port": "in"  },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "branch-a", "port": "out" },
+      "target": { "node": "evaluator", "port": "a"  },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "branch-b", "port": "out" },
+      "target": { "node": "evaluator", "port": "b"  },
+      "capacity": 4
+    }
+  ]
+}

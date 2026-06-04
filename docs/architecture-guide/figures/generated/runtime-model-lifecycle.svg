@@ -1,0 +1,358 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 871.85 1280.5" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" data-nodes="9" data-edges="10" data-type="state" data-detail-tier="rich"><title>state diagram</title><desc>A state diagram with 9 nodes and 10 edges. flowing top to bottom. Key nodes: __state_start, Parsed, StructurallyValidated.. Key relationships: __state_start points to Parsed; Parsed points to StructurallyValidated; StructurallyValidated points to ContractsValidated.. Layout spans 792 by 1200 units with 9 rendered node boxes and 10 routed edge paths.</desc><style>:root {
+  --fm-bg: #fafbfc;
+  --fm-text-color: #1a1a2e;
+  --fm-node-fill: #ffffff;
+  --fm-node-stroke: #e2e8f0;
+  --fm-edge-color: #94a3b8;
+  --fm-cluster-fill: rgba(241,245,249,0.6);
+  --fm-cluster-stroke: #cbd5e1;
+  --fm-accent-1: #6366f1;
+  --fm-accent-2: #3b82f6;
+  --fm-accent-3: #06b6d4;
+  --fm-accent-4: #8b5cf6;
+  --fm-accent-5: #f59e0b;
+  --fm-accent-6: #ec4899;
+  --fm-accent-7: #10b981;
+  --fm-accent-8: #f43f5e;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+.fm-text {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+:root {
+  --fm-edge-muted: var(--fm-cluster-stroke);
+  --fm-edge-label-bg: var(--fm-bg);
+  --fm-edge-label-border: var(--fm-cluster-stroke);
+  --fm-edge-label-text: var(--fm-text-color);
+  --fm-cluster-label-color: var(--fm-text-color);
+  --fm-cluster-c4-fill: var(--fm-cluster-fill);
+  --fm-cluster-c4-stroke: var(--fm-cluster-stroke);
+  --fm-cluster-swimlane-fill: var(--fm-cluster-fill);
+  --fm-cluster-swimlane-stroke: var(--fm-cluster-stroke);
+  --fm-surface-shadow: rgba(15, 23, 42, 0.1);
+}
+svg {
+  shape-rendering: geometricPrecision;
+  background: var(--fm-bg);
+  background-image:
+    radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--fm-accent-1) 4%, transparent) 0%, transparent 50%),
+    linear-gradient(180deg, var(--fm-bg) 0%, color-mix(in srgb, var(--fm-bg) 96%, var(--fm-node-stroke) 4%) 100%);
+}
+.fm-node {
+  isolation: isolate;
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-hover-accent: var(--fm-edge-color);
+}
+.fm-node rect,
+.fm-node path,
+.fm-node circle,
+.fm-node ellipse,
+.fm-node polygon {
+  fill: var(--fm-node-fill);
+  stroke: var(--fm-node-accent);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.10)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.06));
+  transition: fill 200ms ease, stroke 200ms ease, filter 200ms ease, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fm-node line {
+  stroke: var(--fm-node-accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.fm-node text {
+  fill: var(--fm-text-color);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+.fm-node:hover rect,
+.fm-node:hover path,
+.fm-node:hover circle,
+.fm-node:hover ellipse,
+.fm-node:hover polygon {
+  stroke: var(--fm-node-hover-accent);
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.14)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
+  transform: translateY(-2px) scale(1.01);
+  transform-origin: center;
+}
+.fm-node-accent-1 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-1) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-1);
+}
+.fm-node-accent-2 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-2) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-2);
+}
+.fm-node-accent-3 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-3) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-3);
+}
+.fm-node-accent-4 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-4) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-4);
+}
+.fm-node-accent-5 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-5) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-5);
+}
+.fm-node-accent-6 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-6) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-6);
+}
+.fm-node-accent-7 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-7) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-7);
+}
+.fm-node-accent-8 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-8) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-8);
+}
+.fm-node.fm-node-shape-note path,
+.fm-node.fm-node-shape-note rect {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, #fef3c7 40%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-cloud path {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, var(--fm-accent-2) 15%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-cylinder path {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, var(--fm-accent-1) 12%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-star path,
+.fm-node.fm-node-shape-pentagon path {
+  stroke-width: 1.8;
+}
+.fm-edge {
+  fill: none;
+  stroke: var(--fm-edge-color);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
+  transition: stroke 200ms ease, opacity 200ms ease, stroke-width 200ms ease;
+  cursor: default;
+}
+.fm-edge:hover {
+  stroke: var(--fm-accent-1);
+  stroke-width: 2.5;
+  opacity: 1;
+}
+.fm-edge-solid {
+  stroke-dasharray: none;
+}
+.fm-edge-dashed {
+  stroke-dasharray: 6 6;
+}
+.fm-edge-thick {
+  stroke-width: 2.5;
+}
+.fm-edge-thick:hover {
+  stroke-width: 3.5;
+}
+.fm-edge-back {
+  stroke: var(--fm-edge-muted);
+  opacity: 0.8;
+  stroke-dasharray: 4 4;
+}
+.fm-edge-labeled > rect {
+  fill: var(--fm-edge-label-bg);
+  stroke: var(--fm-edge-label-border);
+  stroke-width: 0.75;
+  rx: 6px;
+  ry: 6px;
+}
+/* Add a backdrop filter for modern glassmorphism effect on the rect */
+@supports (backdrop-filter: blur(4px)) {
+  .fm-edge-labeled > rect {
+    fill: color-mix(in srgb, var(--fm-edge-label-bg) 85%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+.edge-label {
+  fill: var(--fm-edge-label-text);
+  font-weight: 600;
+  font-size: 0.88em;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
+}
+marker#arrow-end path,
+marker#arrow-filled path,
+marker#arrow-circle path,
+marker#arrow-diamond path {
+  fill: var(--fm-edge-color);
+  stroke: none;
+  transition: fill 200ms ease;
+}
+.fm-edge:hover ~ marker#arrow-end path,
+.fm-edge:hover ~ marker#arrow-filled path,
+.fm-edge:hover ~ marker#arrow-circle path,
+.fm-edge:hover ~ marker#arrow-diamond path {
+  fill: var(--fm-accent-1);
+}
+marker#arrow-open path {
+  stroke: var(--fm-edge-muted);
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 200ms ease;
+}
+marker#arrow-cross path {
+  stroke: var(--fm-edge-color);
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 200ms ease;
+}
+.fm-cluster {
+  fill: var(--fm-cluster-fill);
+  stroke: var(--fm-cluster-stroke);
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+  rx: 12;
+  ry: 12;
+}
+.fm-cluster-label {
+  fill: var(--fm-cluster-label-color);
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.01em;
+}
+.fm-cluster-c4 {
+  fill: var(--fm-cluster-c4-fill);
+  stroke: var(--fm-cluster-c4-stroke);
+  stroke-dasharray: none;
+}
+.fm-cluster-swimlane {
+  fill: var(--fm-cluster-swimlane-fill);
+  stroke: var(--fm-cluster-swimlane-stroke);
+  stroke-dasharray: none;
+}
+.fm-label {
+  fill: var(--fm-text-color);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fm-node rect,
+  .fm-node path,
+  .fm-node circle,
+  .fm-node ellipse,
+  .fm-node polygon,
+  .fm-edge {
+    transition: none;
+    transform: none;
+  }
+}
+.fm-node:focus-visible {
+  outline: 2px solid var(--fm-accent-1);
+  outline-offset: 3px;
+}
+.fm-node-inactive { opacity: 0.40; }
+.fm-node-block-beta rect,
+.fm-node-block-beta path,
+.fm-node-block-beta circle,
+.fm-node-block-beta ellipse,
+.fm-node-block-beta polygon {
+fill: #546e7a;
+stroke: #455a64;
+}
+.fm-node-block-beta text {
+fill: #f8fafc;
+}
+.fm-node-block-beta-space {
+opacity: 0;
+pointer-events: none;
+}
+.fm-node-highlighted rect,
+.fm-node-highlighted path,
+.fm-node-highlighted circle,
+.fm-node-highlighted ellipse,
+.fm-node-highlighted polygon {
+stroke-width: 2.4;
+}
+.fm-node-highlighted text { font-weight: 600; }
+.fm-node-border-dashed rect,
+.fm-node-border-dashed path,
+.fm-node-border-dashed circle,
+.fm-node-border-dashed ellipse,
+.fm-node-border-dashed polygon {
+stroke-dasharray: 6 4;
+}
+.fm-node-border-double rect,
+.fm-node-border-double path,
+.fm-node-border-double circle,
+.fm-node-border-double ellipse,
+.fm-node-border-double polygon {
+stroke-width: 2.9;
+}
+.fm-cluster { fill-opacity: 0.08; }
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  :root {
+    --fm-bg: #ffffff !important;
+    --fm-text-color: #000000 !important;
+    --fm-node-fill: #ffffff !important;
+    --fm-node-stroke: #000000 !important;
+    --fm-edge-color: #000000 !important;
+  }
+  .fm-node { stroke-width: 2px !important; }
+  .fm-edge { stroke-width: 2px !important; }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .fm-edge, .fm-node {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.fm-node:focus, .fm-edge:focus {
+  outline: 3px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.fm-node:focus-visible, .fm-edge:focus-visible {
+  outline: 3px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.fm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media print {
+  .fm-node text, .fm-edge-labeled text, .fm-cluster-label {
+    font-size: 8.0px !important;
+    fill: #111 !important;
+  }
+  .fm-node path, .fm-node rect, .fm-node circle, .fm-edge {
+    stroke: #111 !important;
+  }
+  .fm-cluster {
+    fill: #fff !important;
+    stroke: #666 !important;
+  }
+}</style><defs><marker id="arrow-end" markerWidth="8" markerHeight="7" refX="8" refY="3.50" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L8 3.50 L0 7 L2 3.50 Z" fill="#94a3b8"/></marker><marker id="arrow-filled" markerWidth="9" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L9 4 L0 8 L2.50 4 Z" fill="#94a3b8"/></marker><marker id="arrow-open" markerWidth="8" markerHeight="7" refX="7" refY="3.50" orient="auto" markerUnits="strokeWidth"><path d="M0 0.50 L7 3.50 L0 6.50" fill="none" stroke="#94a3b8" stroke-width="1.20"/></marker><marker id="arrow-half-top" markerWidth="12" markerHeight="12" refX="7.90" refY="7.25" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L10 8 L0 8 Z" fill="#94a3b8"/></marker><marker id="arrow-half-bottom" markerWidth="12" markerHeight="12" refX="7.90" refY="0.75" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L10 0 L0 8 Z" fill="#94a3b8"/></marker><marker id="arrow-stick-top" markerWidth="12" markerHeight="12" refX="7.50" refY="7" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L7 7" fill="none" stroke="#94a3b8" stroke-width="1.50"/></marker><marker id="arrow-stick-bottom" markerWidth="12" markerHeight="12" refX="7.50" refY="0" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 7 L7 0" fill="none" stroke="#94a3b8" stroke-width="1.50"/></marker><marker id="arrow-start" markerWidth="8" markerHeight="7" refX="8" refY="3.50" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L8 3.50 L0 7 L2 3.50 Z" fill="#94a3b8"/></marker><marker id="arrow-start-filled" markerWidth="9" markerHeight="8" refX="9" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L9 4 L0 8 L2.50 4 Z" fill="#94a3b8"/></marker><marker id="arrow-circle" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M6 3 A3 3 0 0 1 0 3 A3 3 0 0 1 6 3 Z" fill="#94a3b8"/></marker><marker id="arrow-cross" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L6 6 M6 0 L0 6" fill="none" stroke="#94a3b8" stroke-width="1.20"/></marker><marker id="arrow-diamond" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M4 0 L8 4 L4 8 L0 4 Z" fill="#94a3b8"/></marker><linearGradient id="fm-node-gradient" x1="0.0%" y1="0.0%" x2="0.0%" y2="100.0%"><stop offset="0.0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="55.0%" stop-color="#ffffff" stop-opacity="0.97"/><stop offset="100.0%" stop-color="#fafbfc" stop-opacity="0.92"/></linearGradient><filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="2" dy="2" stdDeviation="6" flood-opacity="0.15" flood-color="#0f172a"/></filter><filter id="node-glow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-opacity="0.35" flood-color="#3b82f6"/></filter></defs><g id="fm-edge-0" class="fm-edge" data-fm-edge-id="0" data-fm-source-span="2:1-2:18@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="18" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M359.60 112 C359.60 127,347.33 157,359.60 172 C371.88 187,396.43 157,408.70 172 C420.98 187,408.70 217,408.70 232" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="0" marker-end="url(#arrow-end)" data-fm-source-span="2:1-2:18@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="18" data-fm-source-end-byte="0"/><title>__state_start points to Parsed</title></g><g id="fm-edge-1" class="fm-edge" data-fm-edge-id="1" data-fm-source-span="3:1-3:36@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="36" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M408.70 298.50 C408.70 313.50,397.36 343.50,408.70 358.50 C420.04 373.50,442.73 343.50,454.08 358.50 C465.42 373.50,454.08 403.50,454.08 418.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="1" marker-end="url(#arrow-end)" data-fm-source-span="3:1-3:36@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="36" data-fm-source-end-byte="0"/><title>Parsed points to StructurallyValidated</title></g><g id="fm-edge-2" class="fm-edge" data-fm-edge-id="2" data-fm-source-span="4:1-4:48@0-0" data-fm-source-start-line="4" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="4" data-fm-source-end-col="48" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M454.08 485 C454.08 500,455.52 530,454.08 545 C452.63 560,449.74 530,448.30 545 C446.86 560,448.30 590,448.30 605" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="2" marker-end="url(#arrow-end)" data-fm-source-span="4:1-4:48@0-0" data-fm-source-start-line="4" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="4" data-fm-source-end-col="48" data-fm-source-end-byte="0"/><title>StructurallyValidated points to ContractsValidated</title></g><g id="fm-edge-3" class="fm-edge" data-fm-edge-id="3" data-fm-source-span="5:1-5:34@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="34" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M448.30 671.50 C448.30 686.50,457.38 716.50,448.30 731.50 C439.23 746.50,421.08 716.50,412 731.50 C402.92 746.50,412 776.50,412 791.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="3" marker-end="url(#arrow-end)" data-fm-source-span="5:1-5:34@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="34" data-fm-source-end-byte="0"/><title>ContractsValidated points to Running</title></g><g id="fm-edge-4" class="fm-edge" data-fm-edge-id="4" data-fm-source-span="6:1-6:34@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="34" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M412 858 C412 873,466.40 903,412 918 C357.60 933,248.81 903,194.41 918 C140.02 933,194.41 963,194.41 978" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="4" marker-end="url(#arrow-end)" data-fm-source-span="6:1-6:34@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="34" data-fm-source-end-byte="0"/><title>Running points to Completed: success</title></g><g id="fm-edge-5" class="fm-edge" data-fm-edge-id="5" data-fm-source-span="7:1-7:29@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="29" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M412 858 C412 873,408.80 903,412 918 C415.20 933,421.59 903,424.79 918 C427.98 933,424.79 963,424.79 978" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="5" marker-end="url(#arrow-end)" data-fm-source-span="7:1-7:29@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="29" data-fm-source-end-byte="0"/><title>Running points to Failed: error</title></g><g id="fm-edge-6" class="fm-edge" data-fm-edge-id="6" data-fm-source-span="8:1-8:33@0-0" data-fm-source-start-line="8" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="8" data-fm-source-end-col="33" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M412 858 C412 873,342.96 903,412 918 C481.04 933,619.12 903,688.16 918 C757.20 933,688.16 963,688.16 978" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="6" marker-end="url(#arrow-end)" data-fm-source-span="8:1-8:33@0-0" data-fm-source-start-line="8" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="8" data-fm-source-end-col="33" data-fm-source-end-byte="0"/><title>Running points to Cancelled: policy</title></g><g id="fm-edge-7" class="fm-edge" data-fm-edge-id="7" data-fm-source-span="9:1-9:21@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="21" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M194.41 1044.50 C194.41 1059.50,152.62 1089.50,194.41 1104.50 C236.21 1119.50,319.80 1089.50,361.60 1104.50 C403.40 1119.50,361.60 1149.50,361.60 1164.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="7" marker-end="url(#arrow-end)" data-fm-source-span="9:1-9:21@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="21" data-fm-source-end-byte="0"/><title>Completed: success points to __state_end</title></g><g id="fm-edge-8" class="fm-edge" data-fm-edge-id="8" data-fm-source-span="10:1-10:18@0-0" data-fm-source-start-line="10" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="10" data-fm-source-end-col="18" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M424.79 1044.50 C424.79 1059.50,440.58 1089.50,424.79 1104.50 C408.99 1119.50,377.40 1089.50,361.60 1104.50 C345.80 1119.50,361.60 1149.50,361.60 1164.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="8" marker-end="url(#arrow-end)" data-fm-source-span="10:1-10:18@0-0" data-fm-source-start-line="10" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="10" data-fm-source-end-col="18" data-fm-source-end-byte="0"/><title>Failed: error points to __state_end</title></g><g id="fm-edge-9" class="fm-edge" data-fm-edge-id="9" data-fm-source-span="11:1-11:21@0-0" data-fm-source-start-line="11" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="11" data-fm-source-end-col="21" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M688.16 1044.50 C688.16 1059.50,769.80 1089.50,688.16 1104.50 C606.52 1119.50,443.24 1089.50,361.60 1104.50 C279.96 1119.50,361.60 1149.50,361.60 1164.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="9" marker-end="url(#arrow-end)" data-fm-source-span="11:1-11:21@0-0" data-fm-source-start-line="11" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="11" data-fm-source-end-col="21" data-fm-source-end-byte="0"/><title>Cancelled: policy points to __state_end</title></g><g id="fm-node-state-start-0" class="fm-node fm-node-accent-4 fm-node-shape-filled-circle" data-id="__state_start" data-fm-node-id="__state_start" data-fm-source-span="2:1-2:18@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="18" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="" tabindex="0"><circle cx="359.60" cy="102" r="10" fill="#e2e8f0" stroke="#e2e8f0" stroke-width="1.60"/><text x="359.60" y="107" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e"></text><title>Node: __state_start, filled circle</title></g><g id="fm-node-parsed-1" class="fm-node fm-node-accent-1 fm-node-shape-rect" data-id="Parsed" data-fm-node-id="Parsed" data-fm-source-span="2:1-2:18@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="18" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="Parsed" tabindex="0"><rect x="349.60" y="232" width="118.20" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="408.70" y="270.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">Parsed</text><title>Node: Parsed, rectangle</title></g><g id="fm-node-structurallyvalidated-2" class="fm-node fm-node-accent-2 fm-node-shape-rect" data-id="StructurallyValidated" data-fm-node-id="StructurallyValidated" data-fm-source-span="3:1-3:36@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="36" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="StructurallyValidated" tabindex="0"><rect x="349.60" y="418.50" width="208.95" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="454.08" y="456.75" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">StructurallyValidated</text><title>Node: StructurallyValidated, rectangle</title></g><g id="fm-node-contractsvalidated-3" class="fm-node fm-node-accent-7 fm-node-shape-rect" data-id="ContractsValidated" data-fm-node-id="ContractsValidated" data-fm-source-span="4:1-4:48@0-0" data-fm-source-start-line="4" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="4" data-fm-source-end-col="48" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="ContractsValidated" tabindex="0"><rect x="349.60" y="605" width="197.40" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="448.30" y="643.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">ContractsValidated</text><title>Node: ContractsValidated, rectangle</title></g><g id="fm-node-running-4" class="fm-node fm-node-accent-5 fm-node-shape-rect" data-id="Running" data-fm-node-id="Running" data-fm-source-span="5:1-5:34@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="34" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="Running" tabindex="0"><rect x="349.60" y="791.50" width="124.80" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="412" y="829.75" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">Running</text><title>Node: Running, rectangle</title></g><g id="fm-node-completed-5" class="fm-node fm-node-accent-3 fm-node-shape-rect" data-id="Completed" data-fm-node-id="Completed" data-fm-source-span="6:1-6:34@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="34" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="Completed: success" tabindex="0"><rect x="92" y="978" width="204.83" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="194.41" y="1016.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">Completed: success</text><title>Node: Completed: success, rectangle</title></g><g id="fm-node-failed-6" class="fm-node fm-node-accent-5 fm-node-shape-rect" data-id="Failed" data-fm-node-id="Failed" data-fm-source-span="7:1-7:29@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="29" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="Failed: error" tabindex="0"><rect x="349.60" y="978" width="150.38" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="424.79" y="1016.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">Failed: error</text><title>Node: Failed: error, rectangle</title></g><g id="fm-node-cancelled-7" class="fm-node fm-node-accent-5 fm-node-shape-rect" data-id="Cancelled" data-fm-node-id="Cancelled" data-fm-source-span="8:1-8:33@0-0" data-fm-source-start-line="8" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="8" data-fm-source-end-col="33" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="Cancelled: policy" tabindex="0"><rect x="596.47" y="978" width="183.38" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="688.16" y="1016.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">Cancelled: policy</text><title>Node: Cancelled: policy, rectangle</title></g><g id="fm-node-state-end-8" class="fm-node fm-node-accent-7 fm-node-shape-double-circle" data-id="__state_end" data-fm-node-id="__state_end" data-fm-source-span="9:1-9:21@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="21" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="" tabindex="0"><circle cx="361.60" cy="1176.50" r="12" stroke="#e2e8f0" stroke-width="2" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="361.60" y="1181.50" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e"></text><title>Node: __state_end, double circle</title></g></svg>

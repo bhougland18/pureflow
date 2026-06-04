@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "BeforeTool": [],
+    "AfterTool": [],
+    "BeforeAgent": [],
+    "AfterAgent": [],
+    "Notification": [],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "command": "gt prime --hook",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [],
+    "PreCompress": [],
+    "BeforeModel": [],
+    "AfterModel": [],
+    "BeforeToolSelection": []
+  }
+}

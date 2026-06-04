@@ -1,0 +1,9 @@
+{
+  "components": [
+    {
+      "node": "wasm-upper",
+      "component": "../../crates/pureflow-wasm/fixtures/uppercase-guest/target/wasm32-wasip2/release/pureflow_wasm_uppercase_guest_fixture.wasm",
+      "fuel": 100000000
+    }
+  ]
+}

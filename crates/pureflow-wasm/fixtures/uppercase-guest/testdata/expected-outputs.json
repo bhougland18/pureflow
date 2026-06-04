@@ -1,0 +1,53 @@
+[
+  {
+    "port-id": "out",
+    "packets": [
+      {
+        "metadata": {
+          "message-id": "msg-1",
+          "workflow-id": "flow",
+          "execution": {
+            "execution-id": "run-1",
+            "attempt": 1
+          },
+          "route": {
+            "source": {
+              "node-id": "source",
+              "port-id": "out"
+            },
+            "target": {
+              "node-id": "wasm",
+              "port-id": "in"
+            }
+          }
+        },
+        "payload": {
+          "bytes": [72, 69, 76, 76, 79, 32, 70, 82, 79, 77, 32, 87, 65, 83, 77]
+        }
+      },
+      {
+        "metadata": {
+          "message-id": "msg-2",
+          "workflow-id": "flow",
+          "execution": {
+            "execution-id": "run-1",
+            "attempt": 1
+          },
+          "route": {
+            "source": {
+              "node-id": "source",
+              "port-id": "out"
+            },
+            "target": {
+              "node-id": "wasm",
+              "port-id": "in"
+            }
+          }
+        },
+        "payload": {
+          "bytes": [83, 69, 67, 79, 78, 68, 32, 80, 65, 67, 75, 69, 84]
+        }
+      }
+    ]
+  }
+]

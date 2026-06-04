@@ -1,0 +1,20 @@
+[package]
+name = "pureflow-contract"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = true
+repository.workspace = true
+description = "Node contract metadata and port-level schema validation for the Pureflow workflow engine"
+
+[dependencies]
+pureflow-core.workspace = true
+pureflow-types.workspace = true
+pureflow-workflow.workspace = true
+
+[dev-dependencies]
+pureflow-test-kit.workspace = true
+quickcheck.workspace = true
+
+[lints]
+workspace = true

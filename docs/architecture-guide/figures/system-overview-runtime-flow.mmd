@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant User
+    participant CLI as pureflow-cli
+    participant Format as workflow-format
+    participant Graph as workflow graph
+    participant Engine as engine
+    participant Runtime as runtime
+    participant Node as node executor
+    participant Meta as metadata JSONL
+
+    User->>CLI: run workflow
+    CLI->>Format: parse document
+    Format->>Graph: build validated graph
+    CLI->>Engine: start run
+    Engine->>Runtime: schedule nodes
+    Runtime->>Node: execute node
+    Node-->>Runtime: packets or error
+    Runtime->>Meta: emit records
+    Engine-->>CLI: run summary
+    CLI-->>User: status

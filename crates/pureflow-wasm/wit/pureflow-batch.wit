@@ -1,0 +1,55 @@
+package pureflow:batch@0.1.0;
+
+// MVP ABI target: Component Model preview2 / WASI 0.2 component shape, with no
+// imports. The Rust host uses Wasmtime's dynamic Component Model values because
+// typed bindgen currently expands unsafe internals and Pureflow forbids unsafe
+// code at the workspace lint boundary.
+interface batch {
+    record endpoint {
+        node-id: string,
+        port-id: string,
+    }
+
+    record route {
+        source: option<endpoint>,
+        target: endpoint,
+    }
+
+    record execution {
+        execution-id: string,
+        attempt: u32,
+    }
+
+    record message-metadata {
+        message-id: string,
+        workflow-id: string,
+        execution: execution,
+        route: route,
+    }
+
+    variant payload {
+        bytes(list<u8>),
+        control(string),
+    }
+
+    record packet {
+        metadata: message-metadata,
+        payload: payload,
+    }
+
+    record port-batch {
+        port-id: string,
+        packets: list<packet>,
+    }
+
+    variant batch-error {
+        guest-failure(string),
+        unsupported-payload(string),
+    }
+
+    invoke: func(inputs: list<port-batch>) -> result<list<port-batch>, batch-error>;
+}
+
+world pureflow-node {
+    export batch;
+}

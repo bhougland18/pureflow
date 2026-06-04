@@ -1,0 +1,8 @@
+# Beads Project Configuration
+# issue_prefix: cdt
+# default_priority: 2
+# default_type: task
+
+storage.backend: dolt
+dolt.server: "127.0.0.1"
+dolt.port: 3307

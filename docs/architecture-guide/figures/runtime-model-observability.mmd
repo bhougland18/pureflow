@@ -1,0 +1,8 @@
+flowchart LR
+    CLI[CLI run] --> ENGINE[Engine]
+    ENGINE --> RUNTIME[Runtime]
+    RUNTIME --> NODE[Node executor]
+    NODE --> RUNTIME
+    RUNTIME --> META[(Metadata JSONL)]
+    ENGINE --> SUMMARY[Run summary]
+    SUMMARY --> CLI

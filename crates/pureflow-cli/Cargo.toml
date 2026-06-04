@@ -1,0 +1,32 @@
+[package]
+name = "pureflow-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "pureflow"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+clap_complete.workspace = true
+pureflow-contract.workspace = true
+pureflow-core.workspace = true
+pureflow-engine.workspace = true
+pureflow-introspection = { workspace = true, features = ["serde"] }
+pureflow-runtime = { workspace = true, features = ["tracing"] }
+pureflow-types.workspace = true
+pureflow-wasm.workspace = true
+pureflow-workflow.workspace = true
+pureflow-workflow-format = { workspace = true, features = ["toml", "yaml"] }
+serde.workspace = true
+serde_json.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[lints]
+workspace = true

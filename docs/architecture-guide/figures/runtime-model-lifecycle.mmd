@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Parsed
+    Parsed --> StructurallyValidated
+    StructurallyValidated --> ContractsValidated
+    ContractsValidated --> Running
+    Running --> Completed: success
+    Running --> Failed: error
+    Running --> Cancelled: policy
+    Completed --> [*]
+    Failed --> [*]
+    Cancelled --> [*]

@@ -1,0 +1,27 @@
+{
+  "pureflow_version": "1",
+  "id": "stream-join-window-workload",
+  "nodes": [
+    { "id": "event-source", "inputs": [], "outputs": ["events"] },
+    { "id": "profile-source", "inputs": [], "outputs": ["profiles"] },
+    { "id": "join-window", "inputs": ["events", "profiles"], "outputs": ["joined"] },
+    { "id": "sink", "inputs": ["joined"], "outputs": [] }
+  ],
+  "edges": [
+    {
+      "source": { "node": "event-source", "port": "events" },
+      "target": { "node": "join-window", "port": "events" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "profile-source", "port": "profiles" },
+      "target": { "node": "join-window", "port": "profiles" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "join-window", "port": "joined" },
+      "target": { "node": "sink", "port": "joined" },
+      "capacity": 1
+    }
+  ]
+}

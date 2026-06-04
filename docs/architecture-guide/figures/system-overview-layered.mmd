@@ -1,0 +1,15 @@
+flowchart LR
+    WF[Workflow docs] --> FMT[workflow-format]
+    FMT --> GRAPH[Workflow graph]
+
+    GRAPH --> CONTRACT[Contract validation]
+    GRAPH --> INTROSPECT[Introspection]
+    CORE[Core policy] --> CONTRACT
+
+    CONTRACT --> ENGINE[Engine orchestration]
+    CORE --> ENGINE
+    RUNTIME[Runtime adapter] --> ENGINE
+    WASM[WASM adapter] --> ENGINE
+
+    ENGINE --> CLI[CLI]
+    INTROSPECT --> CLI

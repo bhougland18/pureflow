@@ -1,0 +1,27 @@
+[package]
+name = "pureflow-workflow-format"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = true
+repository.workspace = true
+description = "Workflow definition parsers for Pureflow: JSON (always), TOML and YAML behind optional features"
+
+[dependencies]
+pureflow-types.workspace = true
+pureflow-workflow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yml = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
+
+[features]
+default = []
+toml = ["dep:toml"]
+yaml = ["dep:serde_yml"]
+
+[dev-dependencies]
+quickcheck.workspace = true
+
+[lints]
+workspace = true

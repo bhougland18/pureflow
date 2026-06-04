@@ -1,0 +1,33 @@
+{
+  "pureflow_version": "1",
+  "id": "ai-call-orchestration-workload",
+  "nodes": [
+    { "id": "prompter",       "inputs": [],          "outputs": ["prompt"]      },
+    { "id": "llm-mock",       "inputs": ["prompt"],  "outputs": ["tool-call"]   },
+    { "id": "tool-executor",  "inputs": ["call"],    "outputs": ["result"]      },
+    { "id": "finalizer",      "inputs": ["context"], "outputs": ["response"]    },
+    { "id": "collector",      "inputs": ["response"],"outputs": []              }
+  ],
+  "edges": [
+    {
+      "source": { "node": "prompter",      "port": "prompt"    },
+      "target": { "node": "llm-mock",      "port": "prompt"    },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "llm-mock",      "port": "tool-call" },
+      "target": { "node": "tool-executor", "port": "call"      },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "tool-executor", "port": "result"    },
+      "target": { "node": "finalizer",     "port": "context"   },
+      "capacity": 4
+    },
+    {
+      "source": { "node": "finalizer",     "port": "response"  },
+      "target": { "node": "collector",     "port": "response"  },
+      "capacity": 4
+    }
+  ]
+}

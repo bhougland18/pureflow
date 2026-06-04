@@ -1,0 +1,38 @@
+{
+  "pureflow_version": "1",
+  "id": "fanout-fanin-workload",
+  "nodes": [
+    { "id": "source", "inputs": [], "outputs": ["rows"] },
+    { "id": "splitter", "inputs": ["rows"], "outputs": ["row"] },
+    { "id": "left-enrich", "inputs": ["row"], "outputs": ["enriched"] },
+    { "id": "right-enrich", "inputs": ["row"], "outputs": ["enriched"] },
+    { "id": "collector", "inputs": ["enriched"], "outputs": [] }
+  ],
+  "edges": [
+    {
+      "source": { "node": "source", "port": "rows" },
+      "target": { "node": "splitter", "port": "rows" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "splitter", "port": "row" },
+      "target": { "node": "left-enrich", "port": "row" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "splitter", "port": "row" },
+      "target": { "node": "right-enrich", "port": "row" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "left-enrich", "port": "enriched" },
+      "target": { "node": "collector", "port": "enriched" },
+      "capacity": 1
+    },
+    {
+      "source": { "node": "right-enrich", "port": "enriched" },
+      "target": { "node": "collector", "port": "enriched" },
+      "capacity": 1
+    }
+  ]
+}

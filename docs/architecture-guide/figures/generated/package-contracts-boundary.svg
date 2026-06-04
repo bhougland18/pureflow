@@ -1,0 +1,358 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360.55 836.5" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" data-nodes="10" data-edges="11" data-type="flowchart" data-detail-tier="rich"><title>flowchart diagram</title><desc>A flowchart diagram with 10 nodes and 11 edges. flowing left to right. Key nodes: workflow-format, workflow, types.. Key relationships: workflow-format points to workflow; types points to workflow; workflow points to contract.. Layout spans 1281 by 756 units with 10 rendered node boxes and 11 routed edge paths.</desc><style>:root {
+  --fm-bg: #fafbfc;
+  --fm-text-color: #1a1a2e;
+  --fm-node-fill: #ffffff;
+  --fm-node-stroke: #e2e8f0;
+  --fm-edge-color: #94a3b8;
+  --fm-cluster-fill: rgba(241,245,249,0.6);
+  --fm-cluster-stroke: #cbd5e1;
+  --fm-accent-1: #6366f1;
+  --fm-accent-2: #3b82f6;
+  --fm-accent-3: #06b6d4;
+  --fm-accent-4: #8b5cf6;
+  --fm-accent-5: #f59e0b;
+  --fm-accent-6: #ec4899;
+  --fm-accent-7: #10b981;
+  --fm-accent-8: #f43f5e;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+.fm-text {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+:root {
+  --fm-edge-muted: var(--fm-cluster-stroke);
+  --fm-edge-label-bg: var(--fm-bg);
+  --fm-edge-label-border: var(--fm-cluster-stroke);
+  --fm-edge-label-text: var(--fm-text-color);
+  --fm-cluster-label-color: var(--fm-text-color);
+  --fm-cluster-c4-fill: var(--fm-cluster-fill);
+  --fm-cluster-c4-stroke: var(--fm-cluster-stroke);
+  --fm-cluster-swimlane-fill: var(--fm-cluster-fill);
+  --fm-cluster-swimlane-stroke: var(--fm-cluster-stroke);
+  --fm-surface-shadow: rgba(15, 23, 42, 0.1);
+}
+svg {
+  shape-rendering: geometricPrecision;
+  background: var(--fm-bg);
+  background-image:
+    radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--fm-accent-1) 4%, transparent) 0%, transparent 50%),
+    linear-gradient(180deg, var(--fm-bg) 0%, color-mix(in srgb, var(--fm-bg) 96%, var(--fm-node-stroke) 4%) 100%);
+}
+.fm-node {
+  isolation: isolate;
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-hover-accent: var(--fm-edge-color);
+}
+.fm-node rect,
+.fm-node path,
+.fm-node circle,
+.fm-node ellipse,
+.fm-node polygon {
+  fill: var(--fm-node-fill);
+  stroke: var(--fm-node-accent);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.10)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.06));
+  transition: fill 200ms ease, stroke 200ms ease, filter 200ms ease, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fm-node line {
+  stroke: var(--fm-node-accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.fm-node text {
+  fill: var(--fm-text-color);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+.fm-node:hover rect,
+.fm-node:hover path,
+.fm-node:hover circle,
+.fm-node:hover ellipse,
+.fm-node:hover polygon {
+  stroke: var(--fm-node-hover-accent);
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.14)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
+  transform: translateY(-2px) scale(1.01);
+  transform-origin: center;
+}
+.fm-node-accent-1 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-1) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-1);
+}
+.fm-node-accent-2 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-2) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-2);
+}
+.fm-node-accent-3 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-3) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-3);
+}
+.fm-node-accent-4 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-4) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-4);
+}
+.fm-node-accent-5 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-5) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-5);
+}
+.fm-node-accent-6 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-6) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-6);
+}
+.fm-node-accent-7 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-7) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-7);
+}
+.fm-node-accent-8 {
+  --fm-node-accent: var(--fm-node-stroke);
+  --fm-node-accent: color-mix(in srgb, var(--fm-accent-8) 50%, var(--fm-node-stroke));
+  --fm-node-hover-accent: var(--fm-accent-8);
+}
+.fm-node.fm-node-shape-note path,
+.fm-node.fm-node-shape-note rect {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, #fef3c7 40%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-cloud path {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, var(--fm-accent-2) 15%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-cylinder path {
+  fill: var(--fm-node-fill);
+  fill: color-mix(in srgb, var(--fm-accent-1) 12%, var(--fm-node-fill));
+}
+.fm-node.fm-node-shape-star path,
+.fm-node.fm-node-shape-pentagon path {
+  stroke-width: 1.8;
+}
+.fm-edge {
+  fill: none;
+  stroke: var(--fm-edge-color);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
+  transition: stroke 200ms ease, opacity 200ms ease, stroke-width 200ms ease;
+  cursor: default;
+}
+.fm-edge:hover {
+  stroke: var(--fm-accent-1);
+  stroke-width: 2.5;
+  opacity: 1;
+}
+.fm-edge-solid {
+  stroke-dasharray: none;
+}
+.fm-edge-dashed {
+  stroke-dasharray: 6 6;
+}
+.fm-edge-thick {
+  stroke-width: 2.5;
+}
+.fm-edge-thick:hover {
+  stroke-width: 3.5;
+}
+.fm-edge-back {
+  stroke: var(--fm-edge-muted);
+  opacity: 0.8;
+  stroke-dasharray: 4 4;
+}
+.fm-edge-labeled > rect {
+  fill: var(--fm-edge-label-bg);
+  stroke: var(--fm-edge-label-border);
+  stroke-width: 0.75;
+  rx: 6px;
+  ry: 6px;
+}
+/* Add a backdrop filter for modern glassmorphism effect on the rect */
+@supports (backdrop-filter: blur(4px)) {
+  .fm-edge-labeled > rect {
+    fill: color-mix(in srgb, var(--fm-edge-label-bg) 85%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+.edge-label {
+  fill: var(--fm-edge-label-text);
+  font-weight: 600;
+  font-size: 0.88em;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
+}
+marker#arrow-end path,
+marker#arrow-filled path,
+marker#arrow-circle path,
+marker#arrow-diamond path {
+  fill: var(--fm-edge-color);
+  stroke: none;
+  transition: fill 200ms ease;
+}
+.fm-edge:hover ~ marker#arrow-end path,
+.fm-edge:hover ~ marker#arrow-filled path,
+.fm-edge:hover ~ marker#arrow-circle path,
+.fm-edge:hover ~ marker#arrow-diamond path {
+  fill: var(--fm-accent-1);
+}
+marker#arrow-open path {
+  stroke: var(--fm-edge-muted);
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 200ms ease;
+}
+marker#arrow-cross path {
+  stroke: var(--fm-edge-color);
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 200ms ease;
+}
+.fm-cluster {
+  fill: var(--fm-cluster-fill);
+  stroke: var(--fm-cluster-stroke);
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+  rx: 12;
+  ry: 12;
+}
+.fm-cluster-label {
+  fill: var(--fm-cluster-label-color);
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.01em;
+}
+.fm-cluster-c4 {
+  fill: var(--fm-cluster-c4-fill);
+  stroke: var(--fm-cluster-c4-stroke);
+  stroke-dasharray: none;
+}
+.fm-cluster-swimlane {
+  fill: var(--fm-cluster-swimlane-fill);
+  stroke: var(--fm-cluster-swimlane-stroke);
+  stroke-dasharray: none;
+}
+.fm-label {
+  fill: var(--fm-text-color);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fm-node rect,
+  .fm-node path,
+  .fm-node circle,
+  .fm-node ellipse,
+  .fm-node polygon,
+  .fm-edge {
+    transition: none;
+    transform: none;
+  }
+}
+.fm-node:focus-visible {
+  outline: 2px solid var(--fm-accent-1);
+  outline-offset: 3px;
+}
+.fm-node-inactive { opacity: 0.40; }
+.fm-node-block-beta rect,
+.fm-node-block-beta path,
+.fm-node-block-beta circle,
+.fm-node-block-beta ellipse,
+.fm-node-block-beta polygon {
+fill: #546e7a;
+stroke: #455a64;
+}
+.fm-node-block-beta text {
+fill: #f8fafc;
+}
+.fm-node-block-beta-space {
+opacity: 0;
+pointer-events: none;
+}
+.fm-node-highlighted rect,
+.fm-node-highlighted path,
+.fm-node-highlighted circle,
+.fm-node-highlighted ellipse,
+.fm-node-highlighted polygon {
+stroke-width: 2.4;
+}
+.fm-node-highlighted text { font-weight: 600; }
+.fm-node-border-dashed rect,
+.fm-node-border-dashed path,
+.fm-node-border-dashed circle,
+.fm-node-border-dashed ellipse,
+.fm-node-border-dashed polygon {
+stroke-dasharray: 6 4;
+}
+.fm-node-border-double rect,
+.fm-node-border-double path,
+.fm-node-border-double circle,
+.fm-node-border-double ellipse,
+.fm-node-border-double polygon {
+stroke-width: 2.9;
+}
+.fm-cluster { fill-opacity: 0.08; }
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  :root {
+    --fm-bg: #ffffff !important;
+    --fm-text-color: #000000 !important;
+    --fm-node-fill: #ffffff !important;
+    --fm-node-stroke: #000000 !important;
+    --fm-edge-color: #000000 !important;
+  }
+  .fm-node { stroke-width: 2px !important; }
+  .fm-edge { stroke-width: 2px !important; }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .fm-edge, .fm-node {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.fm-node:focus, .fm-edge:focus {
+  outline: 3px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.fm-node:focus-visible, .fm-edge:focus-visible {
+  outline: 3px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.fm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media print {
+  .fm-node text, .fm-edge-labeled text, .fm-cluster-label {
+    font-size: 8.0px !important;
+    fill: #111 !important;
+  }
+  .fm-node path, .fm-node rect, .fm-node circle, .fm-edge {
+    stroke: #111 !important;
+  }
+  .fm-cluster {
+    fill: #fff !important;
+    stroke: #666 !important;
+  }
+}</style><defs><marker id="arrow-end" markerWidth="8" markerHeight="7" refX="8" refY="3.50" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L8 3.50 L0 7 L2 3.50 Z" fill="#94a3b8"/></marker><marker id="arrow-filled" markerWidth="9" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L9 4 L0 8 L2.50 4 Z" fill="#94a3b8"/></marker><marker id="arrow-open" markerWidth="8" markerHeight="7" refX="7" refY="3.50" orient="auto" markerUnits="strokeWidth"><path d="M0 0.50 L7 3.50 L0 6.50" fill="none" stroke="#94a3b8" stroke-width="1.20"/></marker><marker id="arrow-half-top" markerWidth="12" markerHeight="12" refX="7.90" refY="7.25" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L10 8 L0 8 Z" fill="#94a3b8"/></marker><marker id="arrow-half-bottom" markerWidth="12" markerHeight="12" refX="7.90" refY="0.75" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L10 0 L0 8 Z" fill="#94a3b8"/></marker><marker id="arrow-stick-top" markerWidth="12" markerHeight="12" refX="7.50" refY="7" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L7 7" fill="none" stroke="#94a3b8" stroke-width="1.50"/></marker><marker id="arrow-stick-bottom" markerWidth="12" markerHeight="12" refX="7.50" refY="0" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 7 L7 0" fill="none" stroke="#94a3b8" stroke-width="1.50"/></marker><marker id="arrow-start" markerWidth="8" markerHeight="7" refX="8" refY="3.50" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L8 3.50 L0 7 L2 3.50 Z" fill="#94a3b8"/></marker><marker id="arrow-start-filled" markerWidth="9" markerHeight="8" refX="9" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0 0 L9 4 L0 8 L2.50 4 Z" fill="#94a3b8"/></marker><marker id="arrow-circle" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M6 3 A3 3 0 0 1 0 3 A3 3 0 0 1 6 3 Z" fill="#94a3b8"/></marker><marker id="arrow-cross" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L6 6 M6 0 L0 6" fill="none" stroke="#94a3b8" stroke-width="1.20"/></marker><marker id="arrow-diamond" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M4 0 L8 4 L4 8 L0 4 Z" fill="#94a3b8"/></marker><linearGradient id="fm-node-gradient" x1="0.0%" y1="0.0%" x2="0.0%" y2="100.0%"><stop offset="0.0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="55.0%" stop-color="#ffffff" stop-opacity="0.97"/><stop offset="100.0%" stop-color="#fafbfc" stop-opacity="0.92"/></linearGradient><filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="2" dy="2" stdDeviation="6" flood-opacity="0.15" flood-color="#0f172a"/></filter><filter id="node-glow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-opacity="0.35" flood-color="#3b82f6"/></filter></defs><g id="fm-edge-0" class="fm-edge" data-fm-edge-id="0" data-fm-source-span="2:1-2:41@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="41" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M271.25 125.25 C286.25 125.25,316.25 106.94,331.25 125.25 C346.25 143.56,316.25 180.19,331.25 198.50 C346.25 216.81,376.25 198.50,391.25 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="0" marker-end="url(#arrow-end)" data-fm-source-span="2:1-2:41@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="41" data-fm-source-end-byte="0"/><title>workflow-format points to workflow</title></g><g id="fm-edge-1" class="fm-edge" data-fm-edge-id="1" data-fm-source-span="3:1-3:23@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="23" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M201.95 271.75 C225.61 271.75,272.94 290.06,296.60 271.75 C320.26 253.44,272.94 216.81,296.60 198.50 C320.26 180.19,367.59 198.50,391.25 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="1" marker-end="url(#arrow-end)" data-fm-source-span="3:1-3:23@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="23" data-fm-source-end-byte="0"/><title>types points to workflow</title></g><g id="fm-edge-2" class="fm-edge" data-fm-edge-id="2" data-fm-source-span="5:1-5:29@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="29" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M521 198.50 L641 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="2" marker-end="url(#arrow-end)" data-fm-source-span="5:1-5:29@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="29" data-fm-source-end-byte="0"/><title>workflow points to contract</title></g><g id="fm-edge-3" class="fm-edge" data-fm-edge-id="3" data-fm-source-span="6:1-6:27@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="27" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M193.70 418.25 C241.09 418.25,335.86 473.19,383.25 418.25 C430.64 363.31,318.81 253.44,383.25 198.50 C447.69 143.56,576.56 198.50,641 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="3" marker-end="url(#arrow-end)" data-fm-source-span="6:1-6:27@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="27" data-fm-source-end-byte="0"/><title>core points to contract</title></g><g id="fm-edge-4" class="fm-edge" data-fm-edge-id="4" data-fm-source-span="7:1-7:42@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="42" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M769.10 198.50 C784.10 198.50,814.10 216.81,829.10 198.50 C844.10 180.19,814.10 143.56,829.10 125.25 C844.10 106.94,874.10 125.25,889.10 125.25" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="4" marker-end="url(#arrow-end)" data-fm-source-span="7:1-7:42@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="42" data-fm-source-end-byte="0"/><title>contract points to introspection</title></g><g id="fm-edge-5" class="fm-edge" data-fm-edge-id="5" data-fm-source-span="9:1-9:31@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="31" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M769.10 198.50 C784.10 198.50,814.10 180.19,829.10 198.50 C844.10 216.81,814.10 253.44,829.10 271.75 C844.10 290.06,874.10 271.75,889.10 271.75" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="5" marker-end="url(#arrow-end)" data-fm-source-span="9:1-9:31@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="31" data-fm-source-end-byte="0"/><title>contract points to engine</title></g><g id="fm-edge-6" class="fm-edge" data-fm-edge-id="6" data-fm-source-span="10:1-10:19@0-0" data-fm-source-start-line="10" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="10" data-fm-source-end-col="19" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M193.70 418.25 C280.62 418.25,454.48 454.88,541.40 418.25 C628.33 381.62,454.48 308.38,541.40 271.75 C628.33 235.12,802.17 271.75,889.10 271.75" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="6" marker-end="url(#arrow-end)" data-fm-source-span="10:1-10:19@0-0" data-fm-source-start-line="10" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="10" data-fm-source-end-col="19" data-fm-source-end-byte="0"/><title>core points to engine</title></g><g id="fm-edge-7" class="fm-edge" data-fm-edge-id="7" data-fm-source-span="11:1-11:31@0-0" data-fm-source-start-line="11" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="11" data-fm-source-end-col="31" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M211.85 564.75 C296.51 564.75,465.82 638,550.47 564.75 C635.13 491.50,465.82 345,550.47 271.75 C635.13 198.50,804.44 271.75,889.10 271.75" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="7" marker-end="url(#arrow-end)" data-fm-source-span="11:1-11:31@0-0" data-fm-source-start-line="11" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="11" data-fm-source-end-col="31" data-fm-source-end-byte="0"/><title>runtime points to engine</title></g><g id="fm-edge-8" class="fm-edge" data-fm-edge-id="8" data-fm-source-span="12:1-12:25@0-0" data-fm-source-start-line="12" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="12" data-fm-source-end-col="25" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M200.30 711.25 C286.40 711.25,458.60 821.12,544.70 711.25 C630.80 601.38,458.60 381.62,544.70 271.75 C630.80 161.88,803 271.75,889.10 271.75" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="8" marker-end="url(#arrow-end)" data-fm-source-span="12:1-12:25@0-0" data-fm-source-start-line="12" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="12" data-fm-source-end-col="25" data-fm-source-end-byte="0"/><title>wasm points to engine</title></g><g id="fm-edge-9" class="fm-edge" data-fm-edge-id="9" data-fm-source-span="14:1-14:27@0-0" data-fm-source-start-line="14" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="14" data-fm-source-end-col="27" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M1048.55 125.25 C1063.55 125.25,1093.55 106.94,1108.55 125.25 C1123.55 143.56,1093.55 180.19,1108.55 198.50 C1123.55 216.81,1153.55 198.50,1168.55 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="9" marker-end="url(#arrow-end)" data-fm-source-span="14:1-14:27@0-0" data-fm-source-start-line="14" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="14" data-fm-source-end-col="27" data-fm-source-end-byte="0"/><title>introspection points to cli</title></g><g id="fm-edge-10" class="fm-edge" data-fm-edge-id="10" data-fm-source-span="15:1-15:18@0-0" data-fm-source-start-line="15" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="15" data-fm-source-end-col="18" data-fm-source-end-byte="0" role="graphics-symbol" tabindex="0"><path d="M1005.65 271.75 C1026.01 271.75,1066.74 290.06,1087.10 271.75 C1107.46 253.44,1066.74 216.81,1087.10 198.50 C1107.46 180.19,1148.19 198.50,1168.55 198.50" fill="none" stroke="#94a3b8" stroke-width="1.80" class="fm-edge fm-edge-solid" data-fm-edge-id="10" marker-end="url(#arrow-end)" data-fm-source-span="15:1-15:18@0-0" data-fm-source-start-line="15" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="15" data-fm-source-end-col="18" data-fm-source-end-byte="0"/><title>engine points to cli</title></g><g id="fm-node-fmt-0" class="fm-node fm-node-accent-1 fm-node-shape-rect" data-id="FMT" data-fm-node-id="FMT" data-fm-source-span="2:1-2:41@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="41" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="workflow-format" tabindex="0"><rect x="92" y="92" width="179.25" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="181.62" y="130.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">workflow-format</text><title>Node: workflow-format, rectangle</title></g><g id="fm-node-wf-1" class="fm-node fm-node-accent-1 fm-node-shape-rect" data-id="WF" data-fm-node-id="WF" data-fm-source-span="2:1-2:41@0-0" data-fm-source-start-line="2" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="2" data-fm-source-end-col="41" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="workflow" tabindex="0"><rect x="391.25" y="165.25" width="129.75" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="456.12" y="203.50" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">workflow</text><title>Node: workflow, rectangle</title></g><g id="fm-node-types-2" class="fm-node fm-node-accent-3 fm-node-shape-rect" data-id="TYPES" data-fm-node-id="TYPES" data-fm-source-span="3:1-3:23@0-0" data-fm-source-start-line="3" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="3" data-fm-source-end-col="23" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="types" tabindex="0"><rect x="92" y="238.50" width="109.95" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="146.98" y="276.75" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">types</text><title>Node: types, rectangle</title></g><g id="fm-node-contract-3" class="fm-node fm-node-accent-4 fm-node-shape-rect" data-id="CONTRACT" data-fm-node-id="CONTRACT" data-fm-source-span="5:1-5:29@0-0" data-fm-source-start-line="5" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="5" data-fm-source-end-col="29" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="contract" tabindex="0"><rect x="641" y="165.25" width="128.10" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="705.05" y="203.50" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">contract</text><title>Node: contract, rectangle</title></g><g id="fm-node-core-4" class="fm-node fm-node-accent-7 fm-node-shape-rect" data-id="CORE" data-fm-node-id="CORE" data-fm-source-span="6:1-6:27@0-0" data-fm-source-start-line="6" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="6" data-fm-source-end-col="27" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="core" tabindex="0"><rect x="92" y="385" width="101.70" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="142.85" y="423.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">core</text><title>Node: core, rectangle</title></g><g id="fm-node-introspect-5" class="fm-node fm-node-accent-3 fm-node-shape-rect" data-id="INTROSPECT" data-fm-node-id="INTROSPECT" data-fm-source-span="7:1-7:42@0-0" data-fm-source-start-line="7" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="7" data-fm-source-end-col="42" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="introspection" tabindex="0"><rect x="889.10" y="92" width="159.45" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="968.82" y="130.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">introspection</text><title>Node: introspection, rectangle</title></g><g id="fm-node-engine-6" class="fm-node fm-node-accent-4 fm-node-shape-rect" data-id="ENGINE" data-fm-node-id="ENGINE" data-fm-source-span="9:1-9:31@0-0" data-fm-source-start-line="9" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="9" data-fm-source-end-col="31" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="engine" tabindex="0"><rect x="889.10" y="238.50" width="116.55" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="947.38" y="276.75" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">engine</text><title>Node: engine, rectangle</title></g><g id="fm-node-runtime-7" class="fm-node fm-node-accent-4 fm-node-shape-rect" data-id="RUNTIME" data-fm-node-id="RUNTIME" data-fm-source-span="11:1-11:31@0-0" data-fm-source-start-line="11" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="11" data-fm-source-end-col="31" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="runtime" tabindex="0"><rect x="92" y="531.50" width="119.85" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="151.93" y="569.75" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">runtime</text><title>Node: runtime, rectangle</title></g><g id="fm-node-wasm-8" class="fm-node fm-node-accent-6 fm-node-shape-rect" data-id="WASM" data-fm-node-id="WASM" data-fm-source-span="12:1-12:25@0-0" data-fm-source-start-line="12" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="12" data-fm-source-end-col="25" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="wasm" tabindex="0"><rect x="92" y="678" width="108.30" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="146.15" y="716.25" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">wasm</text><title>Node: wasm, rectangle</title></g><g id="fm-node-cli-9" class="fm-node fm-node-accent-2 fm-node-shape-rect" data-id="CLI" data-fm-node-id="CLI" data-fm-source-span="14:1-14:27@0-0" data-fm-source-start-line="14" data-fm-source-start-col="1" data-fm-source-start-byte="0" data-fm-source-end-line="14" data-fm-source-end-col="27" data-fm-source-end-byte="0" role="graphics-symbol" aria-label="cli" tabindex="0"><rect x="1168.55" y="165.25" width="100" height="66.50" stroke="#e2e8f0" stroke-width="1.60" rx="5.50" fill="url(#fm-node-gradient)" filter="url(#drop-shadow)"/><text x="1218.55" y="203.50" text-anchor="middle" font-family="&#39;Inter&#39;, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#1a1a2e">cli</text><title>Node: cli, rectangle</title></g></svg>

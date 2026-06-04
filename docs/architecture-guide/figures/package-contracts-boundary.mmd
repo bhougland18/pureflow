@@ -1,0 +1,15 @@
+flowchart LR
+    FMT[workflow-format] --> WF[workflow]
+    TYPES[types] --> WF
+
+    WF --> CONTRACT[contract]
+    CORE[core] --> CONTRACT
+    CONTRACT --> INTROSPECT[introspection]
+
+    CONTRACT --> ENGINE[engine]
+    CORE --> ENGINE
+    RUNTIME[runtime] --> ENGINE
+    WASM[wasm] --> ENGINE
+
+    INTROSPECT --> CLI[cli]
+    ENGINE --> CLI

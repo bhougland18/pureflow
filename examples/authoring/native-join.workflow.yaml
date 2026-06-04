@@ -1,0 +1,25 @@
+pureflow_version: "1"
+id: authoring-native-join
+nodes:
+  - id: left-source
+    inputs: []
+    outputs: [left]
+  - id: right-source
+    inputs: []
+    outputs: [right]
+  - id: join
+    inputs: [left, right]
+    outputs: [joined]
+  - id: sink
+    inputs: [joined]
+    outputs: []
+edges:
+  - source: { node: left-source, port: left }
+    target: { node: join, port: left }
+    capacity: 2
+  - source: { node: right-source, port: right }
+    target: { node: join, port: right }
+    capacity: 2
+  - source: { node: join, port: joined }
+    target: { node: sink, port: joined }
+    capacity: 2
