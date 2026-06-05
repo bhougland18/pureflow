@@ -49,12 +49,7 @@ use pureflow_types::{ExecutionId, MessageId, NodeId, PortId};
 use pureflow_workflow::WorkflowDefinition;
 
 /// Payments fed into the workflow: two clear the `high-value` threshold, two do not.
-const PAYMENTS: &[(&str, i64)] = &[
-    ("p-1", 50_000),
-    ("p-2", 250),
-    ("p-3", 10_000),
-    ("p-4", 999),
-];
+const PAYMENTS: &[(&str, i64)] = &[("p-1", 50_000), ("p-2", 250), ("p-3", 10_000), ("p-4", 999)];
 
 /// Build the shared payment routing policy. `trace` toggles per-condition tracing.
 fn payment_rule_set(trace: bool) -> RuleSet {
@@ -180,8 +175,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let registry: StaticNodeExecutorRegistry<ContentRoutingExecutor> =
         StaticNodeExecutorRegistry::new(BTreeMap::from([
             (node_id("source")?, ContentRoutingExecutor::Source),
-            (node_id("router-a")?, ContentRoutingExecutor::Router(router_a)),
-            (node_id("router-b")?, ContentRoutingExecutor::Router(router_b)),
+            (
+                node_id("router-a")?,
+                ContentRoutingExecutor::Router(router_a),
+            ),
+            (
+                node_id("router-b")?,
+                ContentRoutingExecutor::Router(router_b),
+            ),
             (node_id("audit")?, ContentRoutingExecutor::Router(audit)),
             (
                 node_id("high-sink")?,
@@ -207,12 +208,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let execution: ExecutionMetadata =
         ExecutionMetadata::first_attempt(ExecutionId::new("rules-content-routing-example")?);
 
-    let summary: WorkflowRunSummary = block_on(run_workflow_with_registry_and_metadata_sink_summary(
-        &workflow,
-        &execution,
-        &registry,
-        metadata_sink.clone(),
-    ))?;
+    let summary: WorkflowRunSummary =
+        block_on(run_workflow_with_registry_and_metadata_sink_summary(
+            &workflow,
+            &execution,
+            &registry,
+            metadata_sink.clone(),
+        ))?;
     metadata_sink.flush()?;
 
     let high_count = high.lock().expect("high lock").len();
@@ -267,16 +269,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("audit router with trace_conditions=true: audit");
     println!("high-value lane packets: {high_count}");
     println!("standard lane packets:   {standard_count}");
-    println!("fast-path lane packets:  {fast_count} (tag surface, unused by this payload-only stream)");
+    println!(
+        "fast-path lane packets:  {fast_count} (tag surface, unused by this payload-only stream)"
+    );
     println!("rule_eval metadata records: {rule_eval_records}");
     println!("rule_eval records carrying a condition trace (audit): {traced_records}");
     println!("scheduled nodes: {}", summary.scheduled_node_count());
     println!("completed nodes: {}", summary.completed_node_count());
 
     if summary.terminal_state() != WorkflowTerminalState::Completed {
-        return Err(
-            PureflowError::execution("workflow did not reach the Completed terminal state").into(),
-        );
+        return Err(PureflowError::execution(
+            "workflow did not reach the Completed terminal state",
+        )
+        .into());
     }
     summary.into_result()?;
     Ok(())
@@ -348,8 +353,9 @@ fn metadata_jsonl_from_sink(
         }
     };
     let bytes: Vec<u8> = sink.into_inner()?;
-    String::from_utf8(bytes)
-        .map_err(|source| PureflowError::metadata(format!("metadata JSONL was not UTF-8: {source}")))
+    String::from_utf8(bytes).map_err(|source| {
+        PureflowError::metadata(format!("metadata JSONL was not UTF-8: {source}"))
+    })
 }
 
 fn node_id(value: &str) -> Result<NodeId, pureflow_types::IdentifierError> {

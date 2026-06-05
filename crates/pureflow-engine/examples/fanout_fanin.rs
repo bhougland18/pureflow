@@ -6,8 +6,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use futures::{executor::block_on, future::BoxFuture};
 use pureflow_core::{
-    PureflowError, JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut,
+    JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, PureflowError,
     context::{ExecutionMetadata, NodeContext},
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
 };
@@ -17,7 +18,6 @@ use pureflow_engine::{
 use pureflow_test_kit::{NodeBuilder, WorkflowBuilder, drain_port};
 use pureflow_types::{ExecutionId, MessageId, NodeId, PortId};
 use pureflow_workflow::WorkflowDefinition;
-use futures::{executor::block_on, future::BoxFuture};
 
 const ROWS: &[&str] = &["alpha", "beta", "gamma"];
 
@@ -274,8 +274,9 @@ fn metadata_jsonl_from_sink(
         }
     };
     let bytes: Vec<u8> = sink.into_inner()?;
-    String::from_utf8(bytes)
-        .map_err(|source| PureflowError::metadata(format!("metadata JSONL was not UTF-8: {source}")))
+    String::from_utf8(bytes).map_err(|source| {
+        PureflowError::metadata(format!("metadata JSONL was not UTF-8: {source}"))
+    })
 }
 
 #[derive(Debug, Clone, Copy)]

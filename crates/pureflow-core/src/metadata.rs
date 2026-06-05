@@ -1077,7 +1077,9 @@ impl JsonlMetadataSink<BufWriter<File>> {
     /// Returns an error if the file cannot be created.
     pub fn create(path: impl AsRef<Path>) -> Result<Self> {
         let file: File = File::create(path).map_err(|source: std::io::Error| {
-            crate::PureflowError::metadata(format!("failed to create metadata JSONL file: {source}"))
+            crate::PureflowError::metadata(format!(
+                "failed to create metadata JSONL file: {source}"
+            ))
         })?;
 
         Ok(Self::new(BufWriter::new(file)))
@@ -2019,8 +2021,18 @@ mod tests {
     fn rule_eval_record_with_condition_trace_serializes_conditions() {
         let mut rec = rule_eval_record();
         rec.conditions_evaluated = vec![
-            ConditionTrace::new("high-value", "amount >= 10000", true, ConditionSurfaceRecord::Payload),
-            ConditionTrace::new("priority", "tag:priority=high", false, ConditionSurfaceRecord::Tag),
+            ConditionTrace::new(
+                "high-value",
+                "amount >= 10000",
+                true,
+                ConditionSurfaceRecord::Payload,
+            ),
+            ConditionTrace::new(
+                "priority",
+                "tag:priority=high",
+                false,
+                ConditionSurfaceRecord::Tag,
+            ),
         ];
         let record: MetadataRecord = MetadataRecord::RuleEval(rec);
         let json: Value = metadata_record_to_json_value(&record);
@@ -2046,8 +2058,14 @@ mod tests {
 
     #[test]
     fn rule_eval_strategy_labels_are_stable() {
-        assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::FirstMatch), "first_match");
-        assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::AllMatches), "all_matches");
+        assert_eq!(
+            rule_eval_strategy_label(RuleEvalStrategy::FirstMatch),
+            "first_match"
+        );
+        assert_eq!(
+            rule_eval_strategy_label(RuleEvalStrategy::AllMatches),
+            "all_matches"
+        );
         assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::Score), "score");
     }
 

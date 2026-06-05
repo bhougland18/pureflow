@@ -56,7 +56,8 @@ fn rules_interface_only_evaluates() {
 
     let funcs: Vec<&str> = rules.functions.keys().map(String::as_str).collect();
     assert_eq!(
-        funcs, ["evaluate"],
+        funcs,
+        ["evaluate"],
         "the only boundary function must be `evaluate`"
     );
 }

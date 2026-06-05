@@ -15,8 +15,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use futures::{executor::block_on, future::BoxFuture};
 use pureflow_core::{
-    PureflowError, JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut,
+    JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, PureflowError,
     context::{ExecutionMetadata, NodeContext},
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
 };
@@ -26,7 +27,6 @@ use pureflow_engine::{
 use pureflow_test_kit::{NodeBuilder, WorkflowBuilder, drain_port};
 use pureflow_types::{ExecutionId, MessageId, NodeId, PortId};
 use pureflow_workflow::WorkflowDefinition;
-use futures::{executor::block_on, future::BoxFuture};
 
 // Deterministic scenario: a single prompt that triggers one tool call.
 const PROMPT: &str = "prompt:what is the weather in sf?";

@@ -15,7 +15,9 @@
 //! supplied for inspection or execution planning.
 
 pub mod rules;
-pub use rules::{ActionSite, DEAD_LETTER_PORT, RuleContractViolation, rule_set_violations, validate_rule_set};
+pub use rules::{
+    ActionSite, DEAD_LETTER_PORT, RuleContractViolation, rule_set_violations, validate_rule_set,
+};
 
 use std::collections::BTreeMap;
 use std::error::Error;

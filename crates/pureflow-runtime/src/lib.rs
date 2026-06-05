@@ -27,7 +27,7 @@
 
 use asupersync::runtime::{Runtime, RuntimeBuilder};
 use pureflow_core::{
-    CancellationError, CancellationHandle, PureflowError, NodeExecutor, PortsIn, PortsOut, Result,
+    CancellationError, CancellationHandle, NodeExecutor, PortsIn, PortsOut, PureflowError, Result,
     context::{CancellationState, NodeContext},
     lifecycle::{LifecycleEvent, LifecycleEventKind, LifecycleHook, NoopLifecycleHook},
     metadata::{ErrorMetadataRecord, MetadataRecord, MetadataSink, NoopMetadataSink},
@@ -269,12 +269,12 @@ where
         Err(err) => {
             let error_observation: Result<()> =
                 observe_node_error(metadata_sink.as_ref(), &ctx, err.clone());
-            let lifecycle_kind: LifecycleEventKind = if matches!(err, PureflowError::Cancellation(_))
-            {
-                LifecycleEventKind::NodeCancelled
-            } else {
-                LifecycleEventKind::NodeFailed
-            };
+            let lifecycle_kind: LifecycleEventKind =
+                if matches!(err, PureflowError::Cancellation(_)) {
+                    LifecycleEventKind::NodeCancelled
+                } else {
+                    LifecycleEventKind::NodeFailed
+                };
             let lifecycle_observation: Result<()> =
                 observe_lifecycle(hook, metadata_sink.as_ref(), lifecycle_kind, ctx);
             error_observation.and(lifecycle_observation)
@@ -319,7 +319,9 @@ fn cancellation_error(ctx: &NodeContext) -> Option<PureflowError> {
         CancellationState::Active => None,
         CancellationState::Requested(request) => {
             emit_cancellation_trace(ctx, request.reason());
-            Some(PureflowError::from(CancellationError::new(request.reason())))
+            Some(PureflowError::from(CancellationError::new(
+                request.reason(),
+            )))
         }
     }
 }
@@ -400,14 +402,14 @@ mod tests {
     use std::pin::Pin;
     use std::sync::Mutex;
 
+    use futures::executor::block_on;
     use pureflow_core::{
-        CancellationError, PureflowError, ErrorMetadataKind, LifecycleError, MetadataError,
+        CancellationError, ErrorMetadataKind, LifecycleError, MetadataError, PureflowError,
         context::CancellationRequest, lifecycle::LifecycleEventKind,
     };
     use pureflow_test_kit::{
         FailingExecutor, RecordingExecutor, execution_metadata, node_id, workflow_id,
     };
-    use futures::executor::block_on;
 
     #[derive(Debug, Default)]
     struct RecordingHook {

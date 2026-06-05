@@ -181,17 +181,32 @@ mod tests {
 
     #[test]
     fn rule_set_rejects_empty_id() {
-        let err = RuleSet::new("", EvaluationStrategy::FirstMatch, vec![], RuleAction::Drop, false)
-            .unwrap_err();
+        let err = RuleSet::new(
+            "",
+            EvaluationStrategy::FirstMatch,
+            vec![],
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap_err();
         assert_eq!(err, RuleError::EmptyRuleSetId);
     }
 
     #[test]
     fn rule_set_sorts_by_priority() {
-        let rules = vec![route_rule("b", 20), route_rule("a", 10), route_rule("c", 30)];
-        let rs =
-            RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false)
-                .expect("valid rule set");
+        let rules = vec![
+            route_rule("b", 20),
+            route_rule("a", 10),
+            route_rule("c", 30),
+        ];
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .expect("valid rule set");
 
         let ids: Vec<&str> = rs.rules.iter().map(|r| r.id.as_str()).collect();
         assert_eq!(ids, vec!["a", "b", "c"]);
@@ -200,9 +215,14 @@ mod tests {
     #[test]
     fn all_matches_rejects_route_action() {
         let rules = vec![route_rule("r", 10)];
-        let err =
-            RuleSet::new("test", EvaluationStrategy::AllMatches, rules, RuleAction::Drop, false)
-                .unwrap_err();
+        let err = RuleSet::new(
+            "test",
+            EvaluationStrategy::AllMatches,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap_err();
 
         assert!(matches!(
             err,
@@ -212,10 +232,22 @@ mod tests {
 
     #[test]
     fn all_matches_rejects_halt_action() {
-        let rule = Rule::new("h", Condition::Always, RuleAction::Halt("stop".into()), 0, "")
-            .expect("valid rule");
-        let err = RuleSet::new("test", EvaluationStrategy::AllMatches, vec![rule], RuleAction::Drop, false)
-            .unwrap_err();
+        let rule = Rule::new(
+            "h",
+            Condition::Always,
+            RuleAction::Halt("stop".into()),
+            0,
+            "",
+        )
+        .expect("valid rule");
+        let err = RuleSet::new(
+            "test",
+            EvaluationStrategy::AllMatches,
+            vec![rule],
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap_err();
 
         assert!(matches!(err, RuleError::AllMatchesTerminalAction { .. }));
     }
@@ -223,19 +255,30 @@ mod tests {
     #[test]
     fn all_matches_accepts_tag_only_rules() {
         let rules = vec![tag_rule("t1", 10), tag_rule("t2", 20)];
-        RuleSet::new("test", EvaluationStrategy::AllMatches, rules, RuleAction::Drop, false)
-            .expect("AllMatches with Tag-only rules must succeed");
+        RuleSet::new(
+            "test",
+            EvaluationStrategy::AllMatches,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .expect("AllMatches with Tag-only rules must succeed");
     }
 
     #[test]
     fn first_match_accepts_all_terminal_actions() {
         let rules = vec![
             route_rule("r", 10),
-            Rule::new("h", Condition::Always, RuleAction::Halt("e".into()), 20, "")
-                .expect("valid"),
+            Rule::new("h", Condition::Always, RuleAction::Halt("e".into()), 20, "").expect("valid"),
         ];
-        RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false)
-            .expect("FirstMatch accepts terminal actions");
+        RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .expect("FirstMatch accepts terminal actions");
     }
 
     #[test]

@@ -67,9 +67,7 @@ pub mod wasm {
 
 // Flat re-exports of the most commonly used items.
 
-pub use pureflow_types::{
-    ExecutionId, IdentifierError, MessageId, NodeId, PortId, WorkflowId,
-};
+pub use pureflow_types::{ExecutionId, IdentifierError, MessageId, NodeId, PortId, WorkflowId};
 
 pub use pureflow_workflow::{
     EdgeDefinition, EdgeEndpoint, NodeDefinition, PortDirection, WorkflowDefinition,

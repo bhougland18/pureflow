@@ -142,7 +142,8 @@ impl NodeExecutor for WasmRuleNode {
                 }
 
                 let seq = self.packet_counter.fetch_add(1, Ordering::Relaxed);
-                execute_action(&decision.action, &ctx, seq, packet, &outputs, &cancellation).await?;
+                execute_action(&decision.action, &ctx, seq, packet, &outputs, &cancellation)
+                    .await?;
 
                 // --- Drain phase complete ---
 
@@ -378,9 +379,13 @@ mod tests {
     }
 
     enum TestExecutor {
-        Source { payload: serde_json::Value },
+        Source {
+            payload: serde_json::Value,
+        },
         Router(Arc<WasmRuleNode>),
-        Sink { received: Arc<Mutex<Vec<PacketPayload>>> },
+        Sink {
+            received: Arc<Mutex<Vec<PacketPayload>>>,
+        },
     }
 
     impl NodeExecutor for TestExecutor {
@@ -609,7 +614,8 @@ mod tests {
 
         let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
         let router = Arc::new(
-            WasmRuleNode::new(router_rule_set(), component).with_metadata_sink(metadata_sink.clone()),
+            WasmRuleNode::new(router_rule_set(), component)
+                .with_metadata_sink(metadata_sink.clone()),
         );
         let high: Arc<Mutex<Vec<PacketPayload>>> = Arc::new(Mutex::new(Vec::new()));
         let std: Arc<Mutex<Vec<PacketPayload>>> = Arc::new(Mutex::new(Vec::new()));
@@ -656,7 +662,11 @@ mod tests {
             .lines()
             .filter(|line| line.contains("\"record_type\":\"rule_eval\""))
             .collect();
-        assert_eq!(rule_eval_lines.len(), 1, "exactly one RuleEval record expected");
+        assert_eq!(
+            rule_eval_lines.len(),
+            1,
+            "exactly one RuleEval record expected"
+        );
         let record: serde_json::Value =
             serde_json::from_str(rule_eval_lines[0]).expect("record is json");
         assert_eq!(record["rule_set_id"], "payment-router");

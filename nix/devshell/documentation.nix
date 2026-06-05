@@ -93,7 +93,13 @@
           pkgs.quarto
           pkgs.typst
           pkgs.chromium
-          frankenmermaid
+          # frankenmermaid temporarily removed: its cargo-vendor build fetches
+          # crates from crates.io's download endpoint, which now returns HTTP 403
+          # and breaks every `nix develop` (and thus the CI validation gate).
+          # The derivation below is kept (unreferenced) for easy restore once the
+          # vendor fetch is fixed. Mermaid diagram SVGs are regenerated manually
+          # in the meantime. Tracked as pu-w25.
+          # frankenmermaid
         ];
       };
     };

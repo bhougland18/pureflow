@@ -97,7 +97,8 @@ impl RawWorkflowDefinition {
     ) -> Result<RawWorkflowDefinition, WorkflowFormatError> {
         let mut resolved_nodes: Vec<RawNodeDefinition> = Vec::with_capacity(self.nodes.len());
         for (node_index, node) in self.nodes.iter().enumerate() {
-            let rule_set: Option<RuleSet> = resolve_node_rule_set(node_index, node, registry).await?;
+            let rule_set: Option<RuleSet> =
+                resolve_node_rule_set(node_index, node, registry).await?;
             let rule_set_json: Option<serde_json::Value> = match rule_set {
                 Some(rule_set) => Some(serde_json::to_value(&rule_set).map_err(
                     |source: serde_json::Error| WorkflowFormatError::RuleSet {
@@ -197,23 +198,26 @@ async fn resolve_node_rule_set(
             source: RuleSetBindingError::Conflict,
         }),
         (Some(inline), None) => {
-            let rule_set: RuleSet = serde_json::from_value(inline.clone()).map_err(
-                |source: serde_json::Error| WorkflowFormatError::RuleSet {
-                    node_index,
-                    source: RuleSetBindingError::Parse {
-                        reason: source.to_string(),
-                    },
-                },
-            )?;
+            let rule_set: RuleSet =
+                serde_json::from_value(inline.clone()).map_err(|source: serde_json::Error| {
+                    WorkflowFormatError::RuleSet {
+                        node_index,
+                        source: RuleSetBindingError::Parse {
+                            reason: source.to_string(),
+                        },
+                    }
+                })?;
             Ok(Some(rule_set))
         }
         (None, Some(ref_uri)) => {
-            let rule_set: RuleSet = registry.load(ref_uri).await.map_err(
-                |source: RuleSourceError| WorkflowFormatError::RuleSet {
-                    node_index,
-                    source: RuleSetBindingError::Resolve { source },
-                },
-            )?;
+            let rule_set: RuleSet =
+                registry
+                    .load(ref_uri)
+                    .await
+                    .map_err(|source: RuleSourceError| WorkflowFormatError::RuleSet {
+                        node_index,
+                        source: RuleSetBindingError::Resolve { source },
+                    })?;
             Ok(Some(rule_set))
         }
         (None, None) => Ok(None),
@@ -1254,14 +1258,16 @@ mod tests {
         RuleSet::new(
             "router",
             EvaluationStrategy::FirstMatch,
-            vec![Rule::new(
-                "always-route",
-                Condition::Always,
-                RuleAction::Route(PortId::new("out").expect("port id")),
-                10,
-                "route everything",
-            )
-            .expect("rule is valid")],
+            vec![
+                Rule::new(
+                    "always-route",
+                    Condition::Always,
+                    RuleAction::Route(PortId::new("out").expect("port id")),
+                    10,
+                    "route everything",
+                )
+                .expect("rule is valid"),
+            ],
             RuleAction::Drop,
             false,
         )
@@ -1332,14 +1338,12 @@ mod tests {
     #[test]
     fn load_workflow_rejects_node_with_inline_and_ref() {
         let mut raw: RawWorkflowDefinition = single_node_raw();
-        raw.nodes[0].rule_set =
-            Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
+        raw.nodes[0].rule_set = Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
         raw.nodes[0].rule_set_ref = Some("router.rules.json".to_owned());
 
         let registry = SourceRegistry::new();
-        let err: WorkflowFormatError =
-            futures::executor::block_on(raw.load_workflow(&registry))
-                .expect_err("conflicting rule set sources must fail");
+        let err: WorkflowFormatError = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect_err("conflicting rule set sources must fail");
 
         assert_eq!(
             err,
@@ -1356,9 +1360,8 @@ mod tests {
         raw.nodes[0].rule_set = Some(serde_json::json!({ "not": "a rule set" }));
 
         let registry = SourceRegistry::new();
-        let err: WorkflowFormatError =
-            futures::executor::block_on(raw.load_workflow(&registry))
-                .expect_err("malformed inline rule set must fail");
+        let err: WorkflowFormatError = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect_err("malformed inline rule set must fail");
 
         assert!(matches!(
             err,
@@ -1375,9 +1378,8 @@ mod tests {
         raw.nodes[0].rule_set_ref = Some("guardiandb://acct/rules".to_owned());
 
         let registry = SourceRegistry::new();
-        let err: WorkflowFormatError =
-            futures::executor::block_on(raw.load_workflow(&registry))
-                .expect_err("unknown scheme must fail");
+        let err: WorkflowFormatError = futures::executor::block_on(raw.load_workflow(&registry))
+            .expect_err("unknown scheme must fail");
 
         assert!(matches!(
             err,
@@ -1419,11 +1421,9 @@ mod tests {
     #[test]
     fn raw_node_with_inline_rule_set_round_trips_through_json() {
         let mut raw: RawWorkflowDefinition = single_node_raw();
-        raw.nodes[0].rule_set =
-            Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
+        raw.nodes[0].rule_set = Some(serde_json::to_value(sample_rule_set()).expect("serializes"));
 
-        let encoded: String =
-            raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
+        let encoded: String = raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
         let decoded: RawWorkflowDefinition =
             raw_workflow_from_json_str(&encoded).expect("raw workflow decodes");
 
@@ -1433,8 +1433,7 @@ mod tests {
     #[test]
     fn raw_node_without_rule_set_omits_fields_in_json() {
         let raw: RawWorkflowDefinition = single_node_raw();
-        let encoded: String =
-            raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
+        let encoded: String = raw_workflow_to_json_string(&raw).expect("raw workflow serializes");
 
         assert!(!encoded.contains("rule_set"));
     }

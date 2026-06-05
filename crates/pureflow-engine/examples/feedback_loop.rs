@@ -3,8 +3,10 @@
 use std::collections::BTreeMap;
 use std::error::Error;
 
+use futures::executor::block_on;
+use futures::future::BoxFuture;
 use pureflow_core::{
-    PureflowError, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut,
+    NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, PureflowError,
     context::{ExecutionMetadata, NodeContext},
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
 };
@@ -16,8 +18,6 @@ use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
 use pureflow_workflow::{
     EdgeDefinition, EdgeEndpoint, NodeDefinition, WorkflowDefinition, WorkflowGraph,
 };
-use futures::executor::block_on;
-use futures::future::BoxFuture;
 
 #[derive(Debug, Clone, Copy)]
 enum LoopRole {

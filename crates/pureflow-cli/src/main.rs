@@ -19,8 +19,8 @@ use pureflow_contract::{
     ContractValidationError, Determinism, ExecutionMode, NodeContract, PortContract,
 };
 use pureflow_core::{
-    PureflowError, ErrorVisibility, JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket,
-    PortRecvError, PortsIn, PortsOut, RetryDisposition, TieredMetadataSink,
+    ErrorVisibility, JsonlMetadataSink, NodeExecutor, PacketPayload, PortPacket, PortRecvError,
+    PortsIn, PortsOut, PureflowError, RetryDisposition, TieredMetadataSink,
     capability::{
         CapabilityValidationError, NodeCapabilities, PortCapability, PortCapabilityDirection,
     },
@@ -455,7 +455,9 @@ fn load_workflow(input: &str, path: &Path) -> CliResult<WorkflowDefinition> {
 fn load_workflow_with_rules(input: &str, path: &Path) -> CliResult<LoadedWorkflow> {
     let raw: RawWorkflowDefinition = match path.extension().and_then(|ext| ext.to_str()) {
         Some("toml") => raw_workflow_from_toml_str(input).map_err(CliError::WorkflowToml)?,
-        Some("yaml" | "yml") => raw_workflow_from_yaml_str(input).map_err(CliError::WorkflowYaml)?,
+        Some("yaml" | "yml") => {
+            raw_workflow_from_yaml_str(input).map_err(CliError::WorkflowYaml)?
+        }
         Some("json") | None => raw_workflow_from_json_str(input).map_err(CliError::WorkflowJson)?,
         Some(ext) => {
             return Err(CliError::WorkflowFormat(format!(
@@ -1436,7 +1438,8 @@ mod tests {
         let explicit_off: Option<Targets> =
             tracing_targets_from_value(LEGACY_CONDUIT_TRACE_ENV, "off").expect("off should parse");
         let explicit_true: Option<Targets> =
-            tracing_targets_from_value(LEGACY_CONDUIT_TRACE_ENV, "true").expect("true should parse");
+            tracing_targets_from_value(LEGACY_CONDUIT_TRACE_ENV, "true")
+                .expect("true should parse");
         let rust_log_directive: Option<Targets> =
             tracing_targets_from_value(RUST_LOG_ENV, "pureflow.runtime=debug")
                 .expect("target directive should parse");
