@@ -1957,6 +1957,7 @@ dependencies = [
  "pureflow-core",
  "pureflow-engine",
  "pureflow-rules",
+ "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
  "quickcheck",
