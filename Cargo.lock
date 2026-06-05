@@ -1952,9 +1952,11 @@ dependencies = [
 name = "pureflow-wasm"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "futures",
  "pureflow-core",
  "pureflow-engine",
+ "pureflow-rules",
  "pureflow-types",
  "pureflow-workflow",
  "quickcheck",
