@@ -15,6 +15,12 @@
 //! strict boundaries whose declared effects must be enforceable before the
 //! workflow can pass contract validation.
 
+pub mod rules;
+pub use rules::{
+    ConditionSurfaceSummary, RuleActionSummary, RuleIntrospection, RuleSetIntrospection,
+    UnreachableReason, UnreachableRule, introspect_rule_set,
+};
+
 use std::collections::BTreeMap;
 
 use pureflow_contract::{

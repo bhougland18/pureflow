@@ -12,10 +12,12 @@ path = "src/main.rs"
 [dependencies]
 clap.workspace = true
 clap_complete.workspace = true
+futures.workspace = true
 pureflow-contract.workspace = true
 pureflow-core.workspace = true
 pureflow-engine.workspace = true
 pureflow-introspection = { workspace = true, features = ["serde"] }
+pureflow-rules.workspace = true
 pureflow-runtime = { workspace = true, features = ["tracing"] }
 pureflow-types.workspace = true
 pureflow-wasm.workspace = true

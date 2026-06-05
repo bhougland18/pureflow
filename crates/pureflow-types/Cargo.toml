@@ -7,6 +7,12 @@ publish = true
 repository.workspace = true
 description = "Shared opaque identifier types (WorkflowId, NodeId, PortId, …) for the Pureflow workflow engine"
 
+[features]
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"], optional = true }
+
 [dev-dependencies]
 proptest.workspace = true
 

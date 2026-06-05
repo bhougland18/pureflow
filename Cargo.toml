@@ -2,6 +2,7 @@
 members = [
   "crates/pureflow",
   "crates/pureflow-nodes-fs",
+  "crates/pureflow-rules",
   "crates/pureflow-cli",
   "crates/pureflow-core",
   "crates/pureflow-contract",
@@ -32,6 +33,7 @@ arrow-array = "58.1.0"
 arrow-schema = "58.1.0"
 bytes = "1.10.1"
 pureflow = { path = "crates/pureflow", version = "0.1.0" }
+pureflow-rules = { path = "crates/pureflow-rules", version = "0.1.0" }
 pureflow-core = { path = "crates/pureflow-core", version = "0.1.0" }
 pureflow-contract = { path = "crates/pureflow-contract", version = "0.1.0" }
 pureflow-engine = { path = "crates/pureflow-engine", version = "0.1.0" }

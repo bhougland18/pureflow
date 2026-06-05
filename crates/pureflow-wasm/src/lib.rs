@@ -28,6 +28,9 @@ use wasmtime::{
     component::{Component, ComponentExportIndex, Func, Instance, Linker, Val},
 };
 
+pub mod rules;
+pub mod rules_node;
+
 /// WIT package identifier implemented by Pureflow WASM batch guests.
 pub const WIT_PACKAGE: &str = "pureflow:batch@0.1.0";
 

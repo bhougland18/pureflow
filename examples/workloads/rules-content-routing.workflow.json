@@ -1,0 +1,62 @@
+{
+  "pureflow_version": "1",
+  "id": "rules-content-routing",
+  "nodes": [
+    { "id": "source", "inputs": [], "outputs": ["payments"] },
+    {
+      "id": "router-inline",
+      "inputs": ["in"],
+      "outputs": ["high-value-out", "fast-path-out", "standard-out"],
+      "rule_set": {
+        "id": "payment-router",
+        "strategy": "FirstMatch",
+        "rules": [
+          {
+            "id": "high-value",
+            "condition": { "FieldGte": { "path": "amount", "value": { "Integer": 10000 } } },
+            "action": { "Route": "high-value-out" },
+            "priority": 10,
+            "description": "Route payments of $10,000 or more to the high-value lane"
+          },
+          {
+            "id": "priority-tagged",
+            "condition": { "TagEq": { "key": "priority", "value": { "String": "high" } } },
+            "action": { "Route": "fast-path-out" },
+            "priority": 20,
+            "description": "Route packets tagged priority=high to the fast path"
+          },
+          {
+            "id": "standard",
+            "condition": "Always",
+            "action": { "Route": "standard-out" },
+            "priority": 30,
+            "description": "Everything else takes the standard lane"
+          }
+        ],
+        "default_action": "Drop",
+        "trace_conditions": false
+      }
+    },
+    {
+      "id": "router-sidecar",
+      "inputs": ["in"],
+      "outputs": ["high-value-out", "fast-path-out", "standard-out"],
+      "rule_set_ref": "rules-content-routing.fast-path.rules.json"
+    },
+    { "id": "high-sink", "inputs": ["in"], "outputs": [] },
+    { "id": "fast-sink", "inputs": ["in"], "outputs": [] },
+    { "id": "standard-sink", "inputs": ["in"], "outputs": [] }
+  ],
+  "edges": [
+    { "source": { "node": "source", "port": "payments" }, "target": { "node": "router-inline", "port": "in" }, "capacity": null },
+    { "source": { "node": "source", "port": "payments" }, "target": { "node": "router-sidecar", "port": "in" }, "capacity": null },
+
+    { "source": { "node": "router-inline", "port": "high-value-out" }, "target": { "node": "high-sink", "port": "in" }, "capacity": null },
+    { "source": { "node": "router-inline", "port": "fast-path-out" }, "target": { "node": "fast-sink", "port": "in" }, "capacity": null },
+    { "source": { "node": "router-inline", "port": "standard-out" }, "target": { "node": "standard-sink", "port": "in" }, "capacity": null },
+
+    { "source": { "node": "router-sidecar", "port": "high-value-out" }, "target": { "node": "high-sink", "port": "in" }, "capacity": null },
+    { "source": { "node": "router-sidecar", "port": "fast-path-out" }, "target": { "node": "fast-sink", "port": "in" }, "capacity": null },
+    { "source": { "node": "router-sidecar", "port": "standard-out" }, "target": { "node": "standard-sink", "port": "in" }, "capacity": null }
+  ]
+}

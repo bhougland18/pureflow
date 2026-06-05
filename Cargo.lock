@@ -1815,11 +1815,13 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap_complete",
+ "futures",
  "insta",
  "pureflow-contract",
  "pureflow-core",
  "pureflow-engine",
  "pureflow-introspection",
+ "pureflow-rules",
  "pureflow-runtime",
  "pureflow-types",
  "pureflow-wasm",
@@ -1835,6 +1837,7 @@ name = "pureflow-contract"
 version = "0.1.0"
 dependencies = [
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
@@ -1864,10 +1867,12 @@ dependencies = [
  "futures",
  "pureflow-contract",
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-runtime",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
+ "serde_json",
 ]
 
 [[package]]
@@ -1877,6 +1882,7 @@ dependencies = [
  "insta",
  "pureflow-contract",
  "pureflow-core",
+ "pureflow-rules",
  "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
@@ -1895,6 +1901,21 @@ dependencies = [
  "pureflow-test-kit",
  "pureflow-types",
  "tempfile",
+]
+
+[[package]]
+name = "pureflow-rules"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "futures",
+ "pureflow-core",
+ "pureflow-engine",
+ "pureflow-test-kit",
+ "pureflow-types",
+ "pureflow-workflow",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1924,15 +1945,19 @@ name = "pureflow-types"
 version = "0.1.0"
 dependencies = [
  "proptest",
+ "serde",
 ]
 
 [[package]]
 name = "pureflow-wasm"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "futures",
  "pureflow-core",
  "pureflow-engine",
+ "pureflow-rules",
+ "pureflow-test-kit",
  "pureflow-types",
  "pureflow-workflow",
  "quickcheck",
@@ -1940,6 +1965,7 @@ dependencies = [
  "serde_json",
  "wasmtime",
  "wit-bindgen 0.57.1",
+ "wit-parser 0.247.0",
 ]
 
 [[package]]
@@ -1955,12 +1981,15 @@ dependencies = [
 name = "pureflow-workflow-format"
 version = "0.1.0"
 dependencies = [
+ "futures",
+ "pureflow-rules",
  "pureflow-types",
  "pureflow-workflow",
  "quickcheck",
  "serde",
  "serde_json",
  "serde_yml",
+ "tempfile",
  "toml",
 ]
 

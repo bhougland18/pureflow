@@ -3,8 +3,12 @@
 #[cfg(target_arch = "wasm32")]
 extern crate alloc;
 
+// Point at the specific package file rather than the `wit/` directory: the
+// directory now holds two independent packages (pureflow:batch and
+// pureflow:rules) as sibling files, which wit-bindgen's directory parser
+// rejects.
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../../wit/pureflow-batch.wit",
     world: "pureflow-node",
 });
 

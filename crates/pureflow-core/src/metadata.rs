@@ -560,6 +560,140 @@ impl DeadlockDiagnosticMetadata {
     }
 }
 
+/// Evaluation strategy recorded in a rule evaluation metadata record.
+///
+/// Mirrors [`pureflow_rules::EvaluationStrategy`] without a dependency on that crate.
+/// The `RuleNode` converts between them when building the metadata record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RuleEvalStrategy {
+    /// Rules evaluated in priority order; stop at first match.
+    FirstMatch,
+    /// All `Tag` rules evaluated; `default_action` applied as the terminal.
+    AllMatches,
+    /// All rules evaluated; highest-score match wins.
+    Score,
+}
+
+/// Action taken as a result of rule evaluation, recorded in the metadata audit trail.
+///
+/// Mirrors [`pureflow_rules::RuleAction`] without a dependency on that crate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RuleEvalAction {
+    /// Packet routed to the named output port.
+    Route(PortId),
+    /// Packet dropped.
+    Drop,
+    /// Packet sent to the dead-letter port.
+    DeadLetter(String),
+    /// Tag applied to the packet (non-terminal; included in the record alongside the terminal).
+    Tag {
+        /// Tag key.
+        key: String,
+        /// Tag value as a JSON-compatible string.
+        value: String,
+    },
+    /// Node halted with an error.
+    Halt(String),
+    /// No rule matched; the rule set's `default_action` was applied.
+    Default,
+}
+
+/// Surface a condition evaluated against, recorded per condition in trace mode.
+///
+/// Mirrors [`pureflow_rules::ConditionSurface`] without a dependency on that crate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConditionSurfaceRecord {
+    /// Payload field condition.
+    Payload,
+    /// Tag condition.
+    Tag,
+    /// Provenance condition (source node, arrival port, hop count).
+    Provenance,
+    /// Execution context condition (workflow id, execution metadata).
+    ExecutionContext,
+    /// Logical combinator condition.
+    Combinator,
+    /// Constant condition (`Always` or `Never`).
+    Constant,
+}
+
+/// One condition evaluation trace entry, emitted when `trace_conditions` is enabled.
+///
+/// Only populated in the [`RuleEvalRecord`] when the rule set's `trace_conditions`
+/// flag is `true`. Zero-allocation when disabled.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConditionTrace {
+    /// Identifier of the rule this condition belongs to.
+    pub rule_id: String,
+    /// Human-readable description of the condition expression.
+    pub condition_description: String,
+    /// Whether the condition evaluated to `true`.
+    pub matched: bool,
+    /// Which surface the condition drew its data from.
+    pub surface: ConditionSurfaceRecord,
+}
+
+impl ConditionTrace {
+    /// Create a condition trace entry.
+    #[must_use]
+    pub fn new(
+        rule_id: impl Into<String>,
+        condition_description: impl Into<String>,
+        matched: bool,
+        surface: ConditionSurfaceRecord,
+    ) -> Self {
+        Self {
+            rule_id: rule_id.into(),
+            condition_description: condition_description.into(),
+            matched,
+            surface,
+        }
+    }
+}
+
+/// Structured audit record emitted by a `RuleNode` for every packet evaluation.
+///
+/// Emitted in the asupersync finalize phase so the record is never silently
+/// dropped on cancellation — a cancelled `RuleNode` still emits the record for
+/// the packet it was processing when cancellation arrived.
+///
+/// `conditions_evaluated` is only populated when the rule set's
+/// `trace_conditions` flag is `true`. When disabled, the field is empty and
+/// contributes zero allocation overhead.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuleEvalRecord {
+    /// Node that performed the evaluation.
+    pub node_id: NodeId,
+    /// Workflow containing the evaluating node.
+    pub workflow_id: WorkflowId,
+    /// Execution attempt associated with this evaluation.
+    pub execution: ExecutionMetadata,
+    /// Identifier of the rule set that was evaluated.
+    pub rule_set_id: String,
+    /// Strategy used to evaluate the rule set.
+    pub strategy: RuleEvalStrategy,
+    /// Identifier of the rule whose condition matched, if any rule matched.
+    ///
+    /// `None` when the `default_action` was applied.
+    pub matched_rule: Option<String>,
+    /// Terminal action taken for this packet.
+    pub action_taken: RuleEvalAction,
+    /// Number of rules evaluated during this invocation.
+    pub rules_evaluated: u32,
+    /// Tags applied to the packet during evaluation (`Tag` actions).
+    pub tags_applied: Vec<(String, Value)>,
+    /// Source node that produced this packet, if known from routing metadata.
+    pub source_node: Option<NodeId>,
+    /// Port on which this packet arrived, if known from routing metadata.
+    pub arrival_port: Option<PortId>,
+    /// Number of rule nodes this packet has passed through.
+    pub hop_count: u32,
+    /// Tags present on the packet at the start of evaluation.
+    pub tags_present_at_eval: Vec<(String, Value)>,
+    /// Per-condition trace, populated only when `trace_conditions` is enabled.
+    pub conditions_evaluated: Vec<ConditionTrace>,
+}
+
 /// One metadata fact observed at a runtime boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MetadataRecord {
@@ -575,6 +709,8 @@ pub enum MetadataRecord {
     Error(ErrorMetadataRecord),
     /// External tool, service, database, or API effect observed by a node.
     ExternalEffect(ExternalEffectMetadataRecord),
+    /// Rule evaluation audit record emitted by a `RuleNode`.
+    RuleEval(RuleEvalRecord),
 }
 
 /// Cost tier for one metadata record.
@@ -703,6 +839,71 @@ pub fn metadata_record_to_json_value(record: &MetadataRecord) -> Value {
             "target": effect.target(),
             "response_status": effect.response_status(),
         }),
+        MetadataRecord::RuleEval(rule_eval) => json!({
+            "record_type": "rule_eval",
+            "node_id": rule_eval.node_id.as_str(),
+            "workflow_id": rule_eval.workflow_id.as_str(),
+            "execution": execution_metadata_to_json_value(&rule_eval.execution),
+            "rule_set_id": rule_eval.rule_set_id,
+            "strategy": rule_eval_strategy_label(rule_eval.strategy),
+            "matched_rule": rule_eval.matched_rule,
+            "action_taken": rule_eval_action_to_json_value(&rule_eval.action_taken),
+            "rules_evaluated": rule_eval.rules_evaluated,
+            "tags_applied": rule_eval.tags_applied
+                .iter()
+                .map(|(k, v)| json!({"key": k, "value": v}))
+                .collect::<Vec<_>>(),
+            "source_node": rule_eval.source_node.as_ref().map(|n| n.as_str()),
+            "arrival_port": rule_eval.arrival_port.as_ref().map(|p| p.as_str()),
+            "hop_count": rule_eval.hop_count,
+            "tags_present_at_eval": rule_eval.tags_present_at_eval
+                .iter()
+                .map(|(k, v)| json!({"key": k, "value": v}))
+                .collect::<Vec<_>>(),
+            "conditions_evaluated": rule_eval.conditions_evaluated
+                .iter()
+                .map(condition_trace_to_json_value)
+                .collect::<Vec<_>>(),
+        }),
+    }
+}
+
+fn rule_eval_strategy_label(strategy: RuleEvalStrategy) -> &'static str {
+    match strategy {
+        RuleEvalStrategy::FirstMatch => "first_match",
+        RuleEvalStrategy::AllMatches => "all_matches",
+        RuleEvalStrategy::Score => "score",
+    }
+}
+
+fn rule_eval_action_to_json_value(action: &RuleEvalAction) -> Value {
+    match action {
+        RuleEvalAction::Route(port) => json!({"kind": "route", "port": port.as_str()}),
+        RuleEvalAction::Drop => json!({"kind": "drop"}),
+        RuleEvalAction::DeadLetter(reason) => json!({"kind": "dead_letter", "reason": reason}),
+        RuleEvalAction::Tag { key, value } => json!({"kind": "tag", "key": key, "value": value}),
+        RuleEvalAction::Halt(msg) => json!({"kind": "halt", "message": msg}),
+        RuleEvalAction::Default => json!({"kind": "default"}),
+    }
+}
+
+fn condition_trace_to_json_value(trace: &ConditionTrace) -> Value {
+    json!({
+        "rule_id": trace.rule_id,
+        "condition": trace.condition_description,
+        "matched": trace.matched,
+        "surface": condition_surface_record_label(trace.surface),
+    })
+}
+
+fn condition_surface_record_label(surface: ConditionSurfaceRecord) -> &'static str {
+    match surface {
+        ConditionSurfaceRecord::Payload => "payload",
+        ConditionSurfaceRecord::Tag => "tag",
+        ConditionSurfaceRecord::Provenance => "provenance",
+        ConditionSurfaceRecord::ExecutionContext => "execution_context",
+        ConditionSurfaceRecord::Combinator => "combinator",
+        ConditionSurfaceRecord::Constant => "constant",
     }
 }
 
@@ -1776,6 +1977,78 @@ mod tests {
 
         assert_eq!(first, second);
         assert!(lines.next().is_none());
+    }
+
+    fn rule_eval_record() -> RuleEvalRecord {
+        RuleEvalRecord {
+            node_id: node_id("router"),
+            workflow_id: workflow_id("payment-flow"),
+            execution: ExecutionMetadata::first_attempt(execution_id("run-1")),
+            rule_set_id: "account-router".into(),
+            strategy: RuleEvalStrategy::FirstMatch,
+            matched_rule: Some("high-value".into()),
+            action_taken: RuleEvalAction::Route(port_id("high-value-out")),
+            rules_evaluated: 2,
+            tags_applied: vec![],
+            source_node: Some(node_id("validator")),
+            arrival_port: Some(port_id("in")),
+            hop_count: 1,
+            tags_present_at_eval: vec![],
+            conditions_evaluated: vec![],
+        }
+    }
+
+    #[test]
+    fn rule_eval_record_serializes_to_jsonl() {
+        let record: MetadataRecord = MetadataRecord::RuleEval(rule_eval_record());
+        let json: Value = metadata_record_to_json_value(&record);
+
+        assert_eq!(json["record_type"], "rule_eval");
+        assert_eq!(json["rule_set_id"], "account-router");
+        assert_eq!(json["strategy"], "first_match");
+        assert_eq!(json["matched_rule"], "high-value");
+        assert_eq!(json["action_taken"]["kind"], "route");
+        assert_eq!(json["action_taken"]["port"], "high-value-out");
+        assert_eq!(json["rules_evaluated"], 2);
+        assert_eq!(json["hop_count"], 1);
+        assert_eq!(json["source_node"], "validator");
+        assert_eq!(json["arrival_port"], "in");
+    }
+
+    #[test]
+    fn rule_eval_record_with_condition_trace_serializes_conditions() {
+        let mut rec = rule_eval_record();
+        rec.conditions_evaluated = vec![
+            ConditionTrace::new("high-value", "amount >= 10000", true, ConditionSurfaceRecord::Payload),
+            ConditionTrace::new("priority", "tag:priority=high", false, ConditionSurfaceRecord::Tag),
+        ];
+        let record: MetadataRecord = MetadataRecord::RuleEval(rec);
+        let json: Value = metadata_record_to_json_value(&record);
+
+        let conditions = json["conditions_evaluated"].as_array().expect("array");
+        assert_eq!(conditions.len(), 2);
+        assert_eq!(conditions[0]["rule_id"], "high-value");
+        assert_eq!(conditions[0]["matched"], true);
+        assert_eq!(conditions[0]["surface"], "payload");
+        assert_eq!(conditions[1]["matched"], false);
+        assert_eq!(conditions[1]["surface"], "tag");
+    }
+
+    #[test]
+    fn rule_eval_record_drop_action_serializes() {
+        let mut rec = rule_eval_record();
+        rec.action_taken = RuleEvalAction::Drop;
+        rec.matched_rule = None;
+        let json: Value = metadata_record_to_json_value(&MetadataRecord::RuleEval(rec));
+        assert_eq!(json["action_taken"]["kind"], "drop");
+        assert!(json["matched_rule"].is_null());
+    }
+
+    #[test]
+    fn rule_eval_strategy_labels_are_stable() {
+        assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::FirstMatch), "first_match");
+        assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::AllMatches), "all_matches");
+        assert_eq!(rule_eval_strategy_label(RuleEvalStrategy::Score), "score");
     }
 
     struct FailingWriter;
