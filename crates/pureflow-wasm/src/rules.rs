@@ -907,3 +907,351 @@ mod tests {
         assert_eq!(pattern.as_str(), "a*");
     }
 }
+
+/// End-to-end conformance: drive the real `rules-guest` WASM component and
+/// assert it produces the same routing decisions as the native evaluator.
+#[cfg(test)]
+mod conformance {
+    use super::*;
+    use std::{
+        collections::BTreeMap,
+        env,
+        ffi::OsString,
+        fs,
+        path::{Path, PathBuf},
+        process::{Command, Output},
+    };
+
+    use pureflow_core::{
+        PacketPayload,
+        capability::{EffectCapability, NodeCapabilities, PortCapability, PortCapabilityDirection},
+        context::ExecutionMetadata,
+        message::{MessageEndpoint, MessageMetadata, MessageRoute},
+        ports::PortPacket,
+    };
+    use pureflow_rules::{
+        Condition, RuleAction, RuleSet, RuleSetEvaluator, ScalarValue,
+        condition::{EvalContext, FieldPath},
+        rule::{EvaluationStrategy, Rule, RuleDecision},
+    };
+    use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
+    use serde_json::json;
+
+    const RULES_FIXTURE_MANIFEST: &str = "fixtures/rules-guest/Cargo.toml";
+    const RULES_FIXTURE_ARTIFACT: &str =
+        "wasm32-wasip2/release/pureflow_wasm_rules_guest_fixture.wasm";
+
+    fn field(path: &str) -> FieldPath {
+        FieldPath::new(path).expect("valid field path")
+    }
+
+    fn port(id: &str) -> PortId {
+        PortId::new(id).expect("valid port id")
+    }
+
+    fn control_packet(value: serde_json::Value) -> PortPacket {
+        let source = MessageEndpoint::new(
+            NodeId::new("source").expect("node"),
+            PortId::new("out").expect("port"),
+        );
+        let target = MessageEndpoint::new(
+            NodeId::new("router").expect("node"),
+            PortId::new("in").expect("port"),
+        );
+        let route = MessageRoute::new(Some(source), target);
+        let metadata = MessageMetadata::new(
+            MessageId::new("m1").expect("message id"),
+            WorkflowId::new("flow").expect("workflow id"),
+            ExecutionMetadata::first_attempt(ExecutionId::new("run-1").expect("execution id")),
+            route,
+        );
+        PortPacket::new(metadata, PacketPayload::control(value))
+    }
+
+    /// Run both evaluators over the same packet and assert equivalent outcomes.
+    ///
+    /// Compares the routing-relevant decision fields (action, matched rule, and
+    /// applied tags). The per-condition trace description is intentionally not
+    /// carried across the WIT boundary, so tracing is left disabled here.
+    fn assert_equivalent(component: &WasmtimeRuleComponent, rule_set: &RuleSet, packet: &PortPacket) {
+        let workflow_id = WorkflowId::new("flow").expect("workflow id");
+        let tags: BTreeMap<String, ScalarValue> = BTreeMap::new();
+        let exec_meta: BTreeMap<String, ScalarValue> = BTreeMap::new();
+        let source_node = packet.metadata().route().source().map(MessageEndpoint::node_id);
+        let arrival_port = Some(packet.metadata().route().target().port_id());
+
+        let native_ctx = EvalContext {
+            tags: &tags,
+            source_node,
+            arrival_port,
+            hop_count: 0,
+            workflow_id: &workflow_id,
+            execution_metadata: &exec_meta,
+        };
+        let native: RuleDecision = RuleSetEvaluator
+            .evaluate(rule_set, packet, &native_ctx)
+            .expect("native evaluation succeeds");
+
+        let host_ctx = HostEvalContext {
+            payload: packet.payload().clone(),
+            tags: BTreeMap::new(),
+            source_node: source_node.map(NodeId::to_string),
+            arrival_port: arrival_port.map(PortId::to_string),
+            hop_count: 0,
+            workflow_id: workflow_id.to_string(),
+            execution_metadata: BTreeMap::new(),
+        };
+        let wasm: RuleDecision = component
+            .evaluate(rule_set, &host_ctx)
+            .expect("wasm evaluation succeeds");
+
+        assert_eq!(wasm.action, native.action, "action mismatch");
+        assert_eq!(wasm.matched_rule, native.matched_rule, "matched-rule mismatch");
+        assert_eq!(wasm.tags_applied, native.tags_applied, "tags mismatch");
+    }
+
+    fn build_rules_guest_fixture() -> PathBuf {
+        let crate_dir: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let manifest_path: PathBuf = crate_dir.join(RULES_FIXTURE_MANIFEST);
+        let target_dir: PathBuf = env::temp_dir().join(format!(
+            "pureflow-wasm-rules-guest-fixture-{}",
+            std::process::id()
+        ));
+        let artifact_path: PathBuf = target_dir.join(RULES_FIXTURE_ARTIFACT);
+        let cargo: OsString = env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
+        let output: Output = Command::new(cargo)
+            .args([
+                "build",
+                "--manifest-path",
+                path_as_str(&manifest_path),
+                "--target",
+                "wasm32-wasip2",
+                "--release",
+                "--target-dir",
+                path_as_str(&target_dir),
+            ])
+            .env_remove("RUSTFLAGS")
+            .output()
+            .expect("fixture build command should run");
+
+        assert!(
+            output.status.success(),
+            "rules fixture build failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+        );
+        assert!(
+            artifact_path.is_file(),
+            "rules fixture artifact was not written to {}",
+            artifact_path.display(),
+        );
+
+        artifact_path
+    }
+
+    fn wasm32_wasip2_target_available() -> bool {
+        let rustc: OsString = env::var_os("RUSTC").unwrap_or_else(|| OsString::from("rustc"));
+        let Ok(output) = Command::new(rustc)
+            .args(["--print", "target-libdir", "--target", "wasm32-wasip2"])
+            .env_remove("RUSTFLAGS")
+            .output()
+        else {
+            return false;
+        };
+        if !output.status.success() {
+            return false;
+        }
+        let libdir: PathBuf = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
+        fs::read_dir(libdir).is_ok_and(|entries| {
+            entries.filter_map(std::result::Result::ok).any(|entry| {
+                entry.file_name().to_str().is_some_and(|name| {
+                    name.starts_with("libcore-")
+                        && Path::new(name)
+                            .extension()
+                            .is_some_and(|extension| extension.eq_ignore_ascii_case("rlib"))
+                })
+            })
+        })
+    }
+
+    fn path_as_str(path: &Path) -> &str {
+        path.to_str().expect("fixture path should be UTF-8")
+    }
+
+    fn load_component() -> WasmtimeRuleComponent {
+        let bytes: Vec<u8> = fs::read(build_rules_guest_fixture()).expect("fixture readable");
+        WasmtimeRuleComponent::from_component_bytes(bytes).expect("fixture compiles")
+    }
+
+    /// A routing rule set covering field comparisons, set membership, glob
+    /// matching, combinators, provenance, and the default path.
+    fn routing_rule_set() -> RuleSet {
+        let rules = vec![
+            Rule::new(
+                "high-value",
+                Condition::FieldGte {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(10_000),
+                },
+                RuleAction::Route(port("high-out")),
+                10,
+                "route large amounts",
+            )
+            .expect("rule"),
+            Rule::new(
+                "blocked-region",
+                Condition::FieldIn {
+                    path: field("region"),
+                    values: vec![
+                        ScalarValue::String("XX".to_owned()),
+                        ScalarValue::String("YY".to_owned()),
+                    ],
+                },
+                RuleAction::Drop,
+                20,
+                "drop blocked regions",
+            )
+            .expect("rule"),
+            Rule::new(
+                "vip-email",
+                Condition::And(vec![
+                    Condition::FieldMatches {
+                        path: field("email"),
+                        pattern: pureflow_rules::condition::GlobPattern::new("*@vip.example"),
+                    },
+                    Condition::Not(Box::new(Condition::FieldEq {
+                        path: field("suspended"),
+                        value: ScalarValue::Boolean(true),
+                    })),
+                ]),
+                RuleAction::Route(port("vip-out")),
+                30,
+                "route active vip emails",
+            )
+            .expect("rule"),
+            Rule::new(
+                "default",
+                Condition::Always,
+                RuleAction::Route(port("std-out")),
+                40,
+                "standard path",
+            )
+            .expect("rule"),
+        ];
+        RuleSet::new(
+            "router",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .expect("rule set")
+    }
+
+    #[test]
+    fn wasm_guest_matches_native_across_routing_cases() {
+        if !wasm32_wasip2_target_available() {
+            eprintln!(
+                "skipping WASM rule conformance; run through `nix develop .` to provide wasm32-wasip2"
+            );
+            return;
+        }
+        let component = load_component();
+        let rule_set = routing_rule_set();
+
+        for payload in [
+            json!({"amount": 50_000, "region": "US", "email": "a@b.example"}),
+            json!({"amount": 10, "region": "XX"}),
+            json!({"amount": 10, "region": "US", "email": "boss@vip.example", "suspended": false}),
+            json!({"amount": 10, "region": "US", "email": "boss@vip.example", "suspended": true}),
+            json!({"amount": 10, "region": "US", "email": "nobody@elsewhere"}),
+        ] {
+            assert_equivalent(&component, &rule_set, &control_packet(payload));
+        }
+    }
+
+    #[test]
+    fn wasm_guest_matches_native_for_all_matches_tagging() {
+        if !wasm32_wasip2_target_available() {
+            eprintln!("skipping WASM all-matches conformance; no wasm32-wasip2 target");
+            return;
+        }
+        let component = load_component();
+        let rules = vec![
+            Rule::new(
+                "tag-large",
+                Condition::FieldGt {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(100),
+                },
+                RuleAction::Tag {
+                    key: "large".to_owned(),
+                    value: ScalarValue::Boolean(true),
+                },
+                10,
+                "",
+            )
+            .expect("rule"),
+            Rule::new(
+                "tag-domestic",
+                Condition::FieldEq {
+                    path: field("region"),
+                    value: ScalarValue::String("US".to_owned()),
+                },
+                RuleAction::Tag {
+                    key: "domestic".to_owned(),
+                    value: ScalarValue::Boolean(true),
+                },
+                20,
+                "",
+            )
+            .expect("rule"),
+        ];
+        let rule_set = RuleSet::new(
+            "tagger",
+            EvaluationStrategy::AllMatches,
+            rules,
+            RuleAction::Route(port("out")),
+            false,
+        )
+        .expect("rule set");
+
+        assert_equivalent(
+            &component,
+            &rule_set,
+            &control_packet(json!({"amount": 500, "region": "US"})),
+        );
+        assert_equivalent(
+            &component,
+            &rule_set,
+            &control_packet(json!({"amount": 5, "region": "CA"})),
+        );
+    }
+
+    #[test]
+    fn wasm_capability_violation_is_rejected_with_typed_error() {
+        if !wasm32_wasip2_target_available() {
+            eprintln!("skipping WASM capability conformance; no wasm32-wasip2 target");
+            return;
+        }
+        let bytes: Vec<u8> = fs::read(build_rules_guest_fixture()).expect("fixture readable");
+        let capabilities = NodeCapabilities::new(
+            NodeId::new("router").expect("node"),
+            [PortCapability::new(
+                port("in"),
+                PortCapabilityDirection::Receive,
+            )],
+            [EffectCapability::Clock],
+        )
+        .expect("descriptor shape");
+
+        let err: PureflowError =
+            match WasmtimeRuleComponent::from_component_bytes_with_capabilities(&bytes, &capabilities)
+            {
+                Ok(_) => panic!("effect capability must be rejected"),
+                Err(err) => err,
+            };
+        assert_eq!(err.code(), pureflow_core::ErrorCode::InvalidCapabilities);
+        assert!(err.to_string().contains("not enforceable"));
+    }
+}
