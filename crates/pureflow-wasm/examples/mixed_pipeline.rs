@@ -15,6 +15,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use futures::{executor::block_on, future::BoxFuture};
 use pureflow_core::{
     NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, Result,
     context::{ExecutionMetadata, NodeContext},
@@ -24,7 +25,6 @@ use pureflow_engine::{BatchNodeExecutor, StaticNodeExecutorRegistry, run_workflo
 use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
 use pureflow_wasm::WasmtimeBatchComponent;
 use pureflow_workflow::{EdgeDefinition, EdgeEndpoint, NodeDefinition, WorkflowDefinition};
-use futures::{executor::block_on, future::BoxFuture};
 
 const UPPERCASE_FIXTURE_MANIFEST: &str = "fixtures/uppercase-guest/Cargo.toml";
 const UPPERCASE_FIXTURE_ARTIFACT: &str =

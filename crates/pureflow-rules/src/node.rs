@@ -148,11 +148,7 @@ impl NodeExecutor for RuleNode {
                 // --- Drain phase begins: finish this packet regardless of cancellation ---
 
                 // Build the evaluation context from packet routing metadata.
-                let source_node = packet
-                    .metadata()
-                    .route()
-                    .source()
-                    .map(|ep| ep.node_id());
+                let source_node = packet.metadata().route().source().map(|ep| ep.node_id());
                 let arrival_port = Some(packet.metadata().route().target().port_id());
                 let tags: BTreeMap<String, ScalarValue> = BTreeMap::new();
                 let exec_meta: BTreeMap<String, ScalarValue> = BTreeMap::new();
@@ -176,19 +172,15 @@ impl NodeExecutor for RuleNode {
                 // This guarantees the record is written even if the send is
                 // later cancelled — the finalize guarantee described in the proposal.
                 if let Some(sink) = &self.metadata_sink {
-                    let record = build_rule_eval_record(
-                        &ctx,
-                        &self.rule_set,
-                        &packet,
-                        &decision,
-                        &tags,
-                    );
+                    let record =
+                        build_rule_eval_record(&ctx, &self.rule_set, &packet, &decision, &tags);
                     let _ = sink.record(&MetadataRecord::RuleEval(record));
                 }
 
                 // Execute the routing decision.
                 let seq = self.packet_counter.fetch_add(1, Ordering::Relaxed);
-                execute_action(&decision.action, &ctx, seq, packet, &outputs, &cancellation).await?;
+                execute_action(&decision.action, &ctx, seq, packet, &outputs, &cancellation)
+                    .await?;
 
                 // --- Drain phase complete ---
 
@@ -288,9 +280,10 @@ async fn execute_action(
     match action {
         RuleAction::Route(port_id) => {
             let forwarded = forward_packet(ctx, port_id, seq, packet)?;
-            outputs.send(port_id, forwarded, cancellation).await.map_err(
-                |e: PortSendError| PureflowError::execution(e.to_string()),
-            )?;
+            outputs
+                .send(port_id, forwarded, cancellation)
+                .await
+                .map_err(|e: PortSendError| PureflowError::execution(e.to_string()))?;
         }
         RuleAction::Drop => {
             // Packet is consumed and discarded — no send needed.
@@ -299,11 +292,12 @@ async fn execute_action(
             let dead_port = PortId::new("dead_letter")
                 .map_err(|e| PureflowError::execution(format!("invalid port id: {e}")))?;
             let forwarded = forward_packet(ctx, &dead_port, seq, packet)?;
-            outputs.send(&dead_port, forwarded, cancellation).await.map_err(
-                |e: PortSendError| {
+            outputs
+                .send(&dead_port, forwarded, cancellation)
+                .await
+                .map_err(|e: PortSendError| {
                     PureflowError::execution(format!("dead-letter send failed ({reason}): {e}"))
-                },
-            )?;
+                })?;
         }
         RuleAction::Tag { .. } => {
             // Tag is a non-terminal action — the evaluator accumulates tags
@@ -327,13 +321,8 @@ fn forward_packet(
     let source = MessageEndpoint::new(ctx.node_id().clone(), output_port.clone());
     let target = MessageEndpoint::new(ctx.node_id().clone(), output_port.clone());
     let route = MessageRoute::new(Some(source), target);
-    let message_id = MessageId::new(format!(
-        "{}-rule-{}-{}",
-        ctx.node_id(),
-        output_port,
-        seq
-    ))
-    .map_err(|e| PureflowError::execution(format!("rule node message id error: {e}")))?;
+    let message_id = MessageId::new(format!("{}-rule-{}-{}", ctx.node_id(), output_port, seq))
+        .map_err(|e| PureflowError::execution(format!("rule node message id error: {e}")))?;
     let metadata = MessageMetadata::new(
         message_id,
         ctx.workflow_id().clone(),
@@ -346,7 +335,7 @@ fn forward_packet(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
+    use futures::executor::block_on;
     use pureflow_core::{
         CancellationHandle, JsonlMetadataSink, PacketPayload,
         context::ExecutionMetadata,
@@ -361,7 +350,7 @@ mod tests {
     use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
     use pureflow_workflow::WorkflowDefinition;
     use serde_json::json;
-    use futures::executor::block_on;
+    use std::collections::BTreeMap;
 
     use crate::{
         action::RuleAction,
@@ -369,10 +358,18 @@ mod tests {
         rule::{EvaluationStrategy, Rule, RuleSet},
     };
 
-    fn node_id(s: &str) -> NodeId { NodeId::new(s).unwrap() }
-    fn port_id(s: &str) -> PortId { PortId::new(s).unwrap() }
-    fn workflow_id(s: &str) -> WorkflowId { WorkflowId::new(s).unwrap() }
-    fn field(s: &str) -> FieldPath { FieldPath::new(s).unwrap() }
+    fn node_id(s: &str) -> NodeId {
+        NodeId::new(s).unwrap()
+    }
+    fn port_id(s: &str) -> PortId {
+        PortId::new(s).unwrap()
+    }
+    fn workflow_id(s: &str) -> WorkflowId {
+        WorkflowId::new(s).unwrap()
+    }
+    fn field(s: &str) -> FieldPath {
+        FieldPath::new(s).unwrap()
+    }
 
     fn rule_packet(wf: &WorkflowId, payload: PacketPayload) -> PortPacket {
         let src = MessageEndpoint::new(node_id("source"), port_id("out"));
@@ -407,9 +404,13 @@ mod tests {
 
     #[derive(Debug, Clone)]
     enum TestExecutor {
-        Source { payload: serde_json::Value },
+        Source {
+            payload: serde_json::Value,
+        },
         Router(Arc<RuleNode>),
-        Sink { received: Arc<std::sync::Mutex<Vec<PacketPayload>>> },
+        Sink {
+            received: Arc<std::sync::Mutex<Vec<PacketPayload>>>,
+        },
     }
 
     impl NodeExecutor for TestExecutor {
@@ -431,7 +432,9 @@ mod tests {
                             route,
                         );
                         let packet = PortPacket::new(meta, PacketPayload::control(payload));
-                        outputs.send(&port_id("out"), packet, &cancellation).await
+                        outputs
+                            .send(&port_id("out"), packet, &cancellation)
+                            .await
                             .map_err(|e| PureflowError::execution(e.to_string()))
                     })
                 }
@@ -464,14 +467,35 @@ mod tests {
     #[test]
     fn rule_node_routes_high_value_to_correct_port() {
         let rules = vec![
-            Rule::new("high", Condition::FieldGte {
-                path: field("amount"),
-                value: ScalarValue::Integer(10000),
-            }, RuleAction::Route(port_id("high-out")), 10, "high value").unwrap(),
-            Rule::new("std", Condition::Always, RuleAction::Route(port_id("std-out")), 20, "standard").unwrap(),
+            Rule::new(
+                "high",
+                Condition::FieldGte {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(10000),
+                },
+                RuleAction::Route(port_id("high-out")),
+                10,
+                "high value",
+            )
+            .unwrap(),
+            Rule::new(
+                "std",
+                Condition::Always,
+                RuleAction::Route(port_id("std-out")),
+                20,
+                "standard",
+            )
+            .unwrap(),
         ];
         let rule_set = Arc::new(
-            RuleSet::new("router", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+            RuleSet::new(
+                "router",
+                EvaluationStrategy::FirstMatch,
+                rules,
+                RuleAction::Drop,
+                false,
+            )
+            .unwrap(),
         );
         let router = Arc::new(RuleNode::new(rule_set));
         let high_received: Arc<std::sync::Mutex<Vec<PacketPayload>>> =
@@ -480,18 +504,38 @@ mod tests {
             Arc::new(std::sync::Mutex::new(Vec::new()));
 
         let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
-            (node_id("source"), TestExecutor::Source { payload: json!({"amount": 50000}) }),
+            (
+                node_id("source"),
+                TestExecutor::Source {
+                    payload: json!({"amount": 50000}),
+                },
+            ),
             (node_id("router"), TestExecutor::Router(router)),
-            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
-            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+            (
+                node_id("high-sink"),
+                TestExecutor::Sink {
+                    received: high_received.clone(),
+                },
+            ),
+            (
+                node_id("std-sink"),
+                TestExecutor::Sink {
+                    received: std_received.clone(),
+                },
+            ),
         ]));
         let workflow = routing_workflow();
         let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-1").unwrap());
         let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
 
-        let summary: WorkflowRunSummary = block_on(
-            run_workflow_with_registry_and_metadata_sink_summary(&workflow, &execution, &registry, metadata_sink)
-        ).expect("workflow should complete");
+        let summary: WorkflowRunSummary =
+            block_on(run_workflow_with_registry_and_metadata_sink_summary(
+                &workflow,
+                &execution,
+                &registry,
+                metadata_sink,
+            ))
+            .expect("workflow should complete");
 
         assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
         assert_eq!(summary.failed_node_count(), 0);
@@ -504,11 +548,17 @@ mod tests {
 
     #[test]
     fn rule_node_drops_packet_silently() {
-        let rules = vec![
-            Rule::new("drop-all", Condition::Always, RuleAction::Drop, 10, "").unwrap(),
-        ];
+        let rules =
+            vec![Rule::new("drop-all", Condition::Always, RuleAction::Drop, 10, "").unwrap()];
         let rule_set = Arc::new(
-            RuleSet::new("dropper", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+            RuleSet::new(
+                "dropper",
+                EvaluationStrategy::FirstMatch,
+                rules,
+                RuleAction::Drop,
+                false,
+            )
+            .unwrap(),
         );
         let router = Arc::new(RuleNode::new(rule_set));
         let high_received: Arc<std::sync::Mutex<Vec<PacketPayload>>> =
@@ -517,18 +567,37 @@ mod tests {
             Arc::new(std::sync::Mutex::new(Vec::new()));
 
         let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
-            (node_id("source"), TestExecutor::Source { payload: json!({"amount": 100}) }),
+            (
+                node_id("source"),
+                TestExecutor::Source {
+                    payload: json!({"amount": 100}),
+                },
+            ),
             (node_id("router"), TestExecutor::Router(router)),
-            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
-            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+            (
+                node_id("high-sink"),
+                TestExecutor::Sink {
+                    received: high_received.clone(),
+                },
+            ),
+            (
+                node_id("std-sink"),
+                TestExecutor::Sink {
+                    received: std_received.clone(),
+                },
+            ),
         ]));
         let workflow = routing_workflow();
         let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-2").unwrap());
         let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
 
-        let summary = block_on(
-            run_workflow_with_registry_and_metadata_sink_summary(&workflow, &execution, &registry, metadata_sink)
-        ).expect("workflow should complete");
+        let summary = block_on(run_workflow_with_registry_and_metadata_sink_summary(
+            &workflow,
+            &execution,
+            &registry,
+            metadata_sink,
+        ))
+        .expect("workflow should complete");
 
         assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
         assert_eq!(high_received.lock().unwrap().len(), 0);
@@ -543,38 +612,74 @@ mod tests {
     #[test]
     fn rule_node_emits_rule_eval_record_to_metadata_sink() {
         let rules = vec![
-            Rule::new("high", Condition::FieldGte {
-                path: field("amount"),
-                value: ScalarValue::Integer(10000),
-            }, RuleAction::Route(port_id("high-out")), 10, "high value").unwrap(),
-            Rule::new("std", Condition::Always, RuleAction::Route(port_id("std-out")), 20, "standard").unwrap(),
+            Rule::new(
+                "high",
+                Condition::FieldGte {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(10000),
+                },
+                RuleAction::Route(port_id("high-out")),
+                10,
+                "high value",
+            )
+            .unwrap(),
+            Rule::new(
+                "std",
+                Condition::Always,
+                RuleAction::Route(port_id("std-out")),
+                20,
+                "standard",
+            )
+            .unwrap(),
         ];
         let rule_set = Arc::new(
-            RuleSet::new("payment-router", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+            RuleSet::new(
+                "payment-router",
+                EvaluationStrategy::FirstMatch,
+                rules,
+                RuleAction::Drop,
+                false,
+            )
+            .unwrap(),
         );
 
         let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
-        let router = Arc::new(
-            RuleNode::new(rule_set).with_metadata_sink(metadata_sink.clone())
-        );
+        let router = Arc::new(RuleNode::new(rule_set).with_metadata_sink(metadata_sink.clone()));
 
         let high_received = Arc::new(std::sync::Mutex::new(Vec::new()));
         let std_received = Arc::new(std::sync::Mutex::new(Vec::new()));
 
         let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
-            (node_id("source"), TestExecutor::Source { payload: json!({"amount": 50000}) }),
+            (
+                node_id("source"),
+                TestExecutor::Source {
+                    payload: json!({"amount": 50000}),
+                },
+            ),
             (node_id("router"), TestExecutor::Router(router)),
-            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
-            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+            (
+                node_id("high-sink"),
+                TestExecutor::Sink {
+                    received: high_received.clone(),
+                },
+            ),
+            (
+                node_id("std-sink"),
+                TestExecutor::Sink {
+                    received: std_received.clone(),
+                },
+            ),
         ]));
         let workflow = routing_workflow();
         let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-emit-1").unwrap());
 
-        let summary = block_on(
-            run_workflow_with_registry_and_metadata_sink_summary(
-                &workflow, &execution, &registry, metadata_sink.clone()
-            )
-        ).expect("workflow should complete");
+        let summary = block_on(run_workflow_with_registry_and_metadata_sink_summary(
+            &workflow,
+            &execution,
+            &registry,
+            metadata_sink.clone(),
+        ))
+        .expect("workflow should complete");
 
         assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
 
@@ -582,13 +687,21 @@ mod tests {
         drop(registry);
 
         // Read the JSONL output and check for a rule_eval record.
-        let bytes = Arc::try_unwrap(metadata_sink).unwrap().into_inner().unwrap();
+        let bytes = Arc::try_unwrap(metadata_sink)
+            .unwrap()
+            .into_inner()
+            .unwrap();
         let jsonl = String::from_utf8(bytes).unwrap();
-        let rule_eval_lines: Vec<&str> = jsonl.lines()
+        let rule_eval_lines: Vec<&str> = jsonl
+            .lines()
             .filter(|line| line.contains("\"record_type\":\"rule_eval\""))
             .collect();
 
-        assert_eq!(rule_eval_lines.len(), 1, "exactly one RuleEval record expected");
+        assert_eq!(
+            rule_eval_lines.len(),
+            1,
+            "exactly one RuleEval record expected"
+        );
 
         let record: serde_json::Value = serde_json::from_str(rule_eval_lines[0]).unwrap();
         assert_eq!(record["rule_set_id"], "payment-router");
@@ -603,38 +716,74 @@ mod tests {
     fn rule_node_without_sink_emits_no_records() {
         // No sink attached — workflow still completes, no metadata records from rules.
         let rules = vec![
-            Rule::new("r", Condition::Always, RuleAction::Route(port_id("std-out")), 10, "").unwrap(),
+            Rule::new(
+                "r",
+                Condition::Always,
+                RuleAction::Route(port_id("std-out")),
+                10,
+                "",
+            )
+            .unwrap(),
         ];
         let rule_set = Arc::new(
-            RuleSet::new("rs", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+            RuleSet::new(
+                "rs",
+                EvaluationStrategy::FirstMatch,
+                rules,
+                RuleAction::Drop,
+                false,
+            )
+            .unwrap(),
         );
         let router = Arc::new(RuleNode::new(rule_set));
         let high_received = Arc::new(std::sync::Mutex::new(Vec::new()));
         let std_received = Arc::new(std::sync::Mutex::new(Vec::new()));
 
         let registry = StaticNodeExecutorRegistry::new(BTreeMap::from([
-            (node_id("source"), TestExecutor::Source { payload: json!({}) }),
+            (
+                node_id("source"),
+                TestExecutor::Source { payload: json!({}) },
+            ),
             (node_id("router"), TestExecutor::Router(router)),
-            (node_id("high-sink"), TestExecutor::Sink { received: high_received.clone() }),
-            (node_id("std-sink"), TestExecutor::Sink { received: std_received.clone() }),
+            (
+                node_id("high-sink"),
+                TestExecutor::Sink {
+                    received: high_received.clone(),
+                },
+            ),
+            (
+                node_id("std-sink"),
+                TestExecutor::Sink {
+                    received: std_received.clone(),
+                },
+            ),
         ]));
         let workflow = routing_workflow();
         let execution = ExecutionMetadata::first_attempt(ExecutionId::new("run-no-sink").unwrap());
         let metadata_sink = Arc::new(JsonlMetadataSink::new(Vec::new()));
 
-        let summary = block_on(
-            run_workflow_with_registry_and_metadata_sink_summary(
-                &workflow, &execution, &registry, metadata_sink.clone()
-            )
-        ).expect("workflow should complete");
+        let summary = block_on(run_workflow_with_registry_and_metadata_sink_summary(
+            &workflow,
+            &execution,
+            &registry,
+            metadata_sink.clone(),
+        ))
+        .expect("workflow should complete");
 
         assert_eq!(summary.terminal_state(), WorkflowTerminalState::Completed);
         drop(registry);
-        let bytes = Arc::try_unwrap(metadata_sink).unwrap().into_inner().unwrap();
+        let bytes = Arc::try_unwrap(metadata_sink)
+            .unwrap()
+            .into_inner()
+            .unwrap();
         let jsonl = String::from_utf8(bytes).unwrap();
-        let rule_eval_count = jsonl.lines()
+        let rule_eval_count = jsonl
+            .lines()
             .filter(|l| l.contains("\"record_type\":\"rule_eval\""))
             .count();
-        assert_eq!(rule_eval_count, 0, "no RuleEval records expected without sink");
+        assert_eq!(
+            rule_eval_count, 0,
+            "no RuleEval records expected without sink"
+        );
     }
 }

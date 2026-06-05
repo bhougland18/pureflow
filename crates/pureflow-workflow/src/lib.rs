@@ -723,8 +723,8 @@ fn reject_duplicate_ports(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pureflow_types::IdentifierKind;
     use proptest::{collection::hash_set, prelude::*};
+    use pureflow_types::IdentifierKind;
     use quickcheck::{Arbitrary as QuickArbitrary, Gen, QuickCheck};
     use std::num::NonZeroUsize;
     use std::panic::{self, AssertUnwindSafe};

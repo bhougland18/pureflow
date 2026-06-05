@@ -152,7 +152,14 @@ impl SourceRegistry {
 impl fmt::Debug for SourceRegistry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SourceRegistry")
-            .field("schemes", &self.sources.iter().map(|(s, _)| s.as_str()).collect::<Vec<_>>())
+            .field(
+                "schemes",
+                &self
+                    .sources
+                    .iter()
+                    .map(|(s, _)| s.as_str())
+                    .collect::<Vec<_>>(),
+            )
             .field("base_dir", &self.base_dir)
             .finish()
     }
@@ -262,31 +269,40 @@ impl RuleSetSource for EmbeddedSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use pureflow_rules::{Condition, EvaluationStrategy, Rule, RuleAction, RuleSet};
     use pureflow_types::PortId;
+    use std::sync::Arc;
 
-    fn port(s: &str) -> PortId { PortId::new(s).unwrap() }
+    fn port(s: &str) -> PortId {
+        PortId::new(s).unwrap()
+    }
 
     fn sample_rule_set() -> RuleSet {
         RuleSet::new(
             "test-set",
             EvaluationStrategy::FirstMatch,
-            vec![Rule::new(
-                "always-route",
-                Condition::Always,
-                RuleAction::Route(port("out")),
-                10,
-                "route everything",
-            ).unwrap()],
+            vec![
+                Rule::new(
+                    "always-route",
+                    Condition::Always,
+                    RuleAction::Route(port("out")),
+                    10,
+                    "route everything",
+                )
+                .unwrap(),
+            ],
             RuleAction::Drop,
             false,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
     fn extract_scheme_from_uri_with_scheme() {
-        assert_eq!(extract_scheme("guardiandb://path/to/rules"), Some("guardiandb"));
+        assert_eq!(
+            extract_scheme("guardiandb://path/to/rules"),
+            Some("guardiandb")
+        );
         assert_eq!(extract_scheme("file:///absolute/path.json"), Some("file"));
         assert_eq!(extract_scheme("embedded://"), Some("embedded"));
     }

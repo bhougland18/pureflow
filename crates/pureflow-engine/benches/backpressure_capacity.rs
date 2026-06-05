@@ -2,8 +2,12 @@
 
 use std::hint::black_box;
 
+use criterion::{
+    BenchmarkGroup, Criterion, Throughput, criterion_group, criterion_main, measurement::WallTime,
+};
+use futures::{executor::block_on, future::BoxFuture};
 use pureflow_core::{
-    PureflowError, NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, Result,
+    NodeExecutor, PacketPayload, PortPacket, PortsIn, PortsOut, PureflowError, Result,
     context::{ExecutionMetadata, NodeContext},
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
 };
@@ -13,10 +17,6 @@ use pureflow_test_kit::{
 };
 use pureflow_types::{ExecutionId, MessageId};
 use pureflow_workflow::WorkflowDefinition;
-use criterion::{
-    BenchmarkGroup, Criterion, Throughput, criterion_group, criterion_main, measurement::WallTime,
-};
-use futures::{executor::block_on, future::BoxFuture};
 
 const MESSAGE_COUNT: usize = 32;
 

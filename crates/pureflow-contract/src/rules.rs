@@ -191,7 +191,10 @@ pub fn validate_rule_set(
     rule_node_id: &NodeId,
     rule_set: &RuleSet,
 ) -> Result<(), RuleContractViolation> {
-    match rule_set_violations(workflow, rule_node_id, rule_set).into_iter().next() {
+    match rule_set_violations(workflow, rule_node_id, rule_set)
+        .into_iter()
+        .next()
+    {
         Some(violation) => Err(violation),
         None => Ok(()),
     }
@@ -405,8 +408,14 @@ mod tests {
     }
 
     fn rule_set(id: &str, rules: Vec<Rule>, default_action: RuleAction) -> RuleSet {
-        RuleSet::new(id, EvaluationStrategy::FirstMatch, rules, default_action, false)
-            .expect("valid rule set")
+        RuleSet::new(
+            id,
+            EvaluationStrategy::FirstMatch,
+            rules,
+            default_action,
+            false,
+        )
+        .expect("valid rule set")
     }
 
     /// Workflow: source -> router -> sink, where `router` hosts the rule set and
@@ -691,17 +700,21 @@ mod tests {
 
         let violations = rule_set_violations(&workflow, &node_id("router"), &rs);
 
-        assert!(violations.contains(&RuleContractViolation::UnknownArrivalPort {
-            rule_set_id: "router-rules".to_owned(),
-            rule_id: "nested".to_owned(),
-            node_id: node_id("router"),
-            port_id: port_id("ghost-port"),
-        }));
-        assert!(violations.contains(&RuleContractViolation::UnknownSourceNode {
-            rule_set_id: "router-rules".to_owned(),
-            rule_id: "nested".to_owned(),
-            node_id: node_id("ghost-node"),
-        }));
+        assert!(
+            violations.contains(&RuleContractViolation::UnknownArrivalPort {
+                rule_set_id: "router-rules".to_owned(),
+                rule_id: "nested".to_owned(),
+                node_id: node_id("router"),
+                port_id: port_id("ghost-port"),
+            })
+        );
+        assert!(
+            violations.contains(&RuleContractViolation::UnknownSourceNode {
+                rule_set_id: "router-rules".to_owned(),
+                rule_id: "nested".to_owned(),
+                node_id: node_id("ghost-node"),
+            })
+        );
     }
 
     #[test]

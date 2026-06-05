@@ -2,6 +2,7 @@
 
 use std::{hint::black_box, io, num::NonZeroUsize};
 
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use pureflow_core::{
     JsonlMetadataSink, MessageBoundaryKind, MessageBoundaryRecord, MetadataRecord, MetadataSink,
     MetadataTier, NoopMetadataSink, TieredMetadataPolicy, TieredMetadataSink,
@@ -10,7 +11,6 @@ use pureflow_core::{
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
 };
 use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
-use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 
 fn workflow_id(value: &str) -> WorkflowId {
     WorkflowId::new(value).expect("benchmark workflow id should be valid")

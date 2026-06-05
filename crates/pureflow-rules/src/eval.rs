@@ -2,10 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use pureflow_core::{
-    ConditionSurfaceRecord, ConditionTrace, PacketPayload,
-    ports::PortPacket,
-};
+use pureflow_core::{ConditionSurfaceRecord, ConditionTrace, PacketPayload, ports::PortPacket};
 
 use crate::{
     action::RuleAction,
@@ -50,12 +47,8 @@ impl RuleSetEvaluator {
         context: &EvalContext<'_>,
     ) -> Result<RuleDecision, RuleError> {
         match rule_set.strategy {
-            EvaluationStrategy::FirstMatch => {
-                self.evaluate_first_match(rule_set, packet, context)
-            }
-            EvaluationStrategy::AllMatches => {
-                self.evaluate_all_matches(rule_set, packet, context)
-            }
+            EvaluationStrategy::FirstMatch => self.evaluate_first_match(rule_set, packet, context),
+            EvaluationStrategy::AllMatches => self.evaluate_all_matches(rule_set, packet, context),
             EvaluationStrategy::Score => self.evaluate_score(rule_set, packet, context),
         }
     }
@@ -233,57 +226,39 @@ fn eval_condition(
 ) -> bool {
     match condition {
         // --- Payload conditions ---
-        Condition::FieldEq { path, value } => {
-            resolve_payload(payload, path)
-                .map(|v| json_value_eq_scalar(v, value))
-                .unwrap_or(false)
-        }
-        Condition::FieldNeq { path, value } => {
-            resolve_payload(payload, path)
-                .map(|v| !json_value_eq_scalar(v, value))
-                .unwrap_or(false)
-        }
-        Condition::FieldGt { path, value } => {
-            resolve_payload(payload, path)
-                .and_then(|v| json_value_cmp_scalar(v, value))
-                .map(|ord| ord == std::cmp::Ordering::Greater)
-                .unwrap_or(false)
-        }
-        Condition::FieldLt { path, value } => {
-            resolve_payload(payload, path)
-                .and_then(|v| json_value_cmp_scalar(v, value))
-                .map(|ord| ord == std::cmp::Ordering::Less)
-                .unwrap_or(false)
-        }
-        Condition::FieldGte { path, value } => {
-            resolve_payload(payload, path)
-                .and_then(|v| json_value_cmp_scalar(v, value))
-                .map(|ord| ord != std::cmp::Ordering::Less)
-                .unwrap_or(false)
-        }
-        Condition::FieldLte { path, value } => {
-            resolve_payload(payload, path)
-                .and_then(|v| json_value_cmp_scalar(v, value))
-                .map(|ord| ord != std::cmp::Ordering::Greater)
-                .unwrap_or(false)
-        }
-        Condition::FieldIn { path, values } => {
-            resolve_payload(payload, path)
-                .map(|v| values.iter().any(|s| json_value_eq_scalar(v, s)))
-                .unwrap_or(false)
-        }
+        Condition::FieldEq { path, value } => resolve_payload(payload, path)
+            .map(|v| json_value_eq_scalar(v, value))
+            .unwrap_or(false),
+        Condition::FieldNeq { path, value } => resolve_payload(payload, path)
+            .map(|v| !json_value_eq_scalar(v, value))
+            .unwrap_or(false),
+        Condition::FieldGt { path, value } => resolve_payload(payload, path)
+            .and_then(|v| json_value_cmp_scalar(v, value))
+            .map(|ord| ord == std::cmp::Ordering::Greater)
+            .unwrap_or(false),
+        Condition::FieldLt { path, value } => resolve_payload(payload, path)
+            .and_then(|v| json_value_cmp_scalar(v, value))
+            .map(|ord| ord == std::cmp::Ordering::Less)
+            .unwrap_or(false),
+        Condition::FieldGte { path, value } => resolve_payload(payload, path)
+            .and_then(|v| json_value_cmp_scalar(v, value))
+            .map(|ord| ord != std::cmp::Ordering::Less)
+            .unwrap_or(false),
+        Condition::FieldLte { path, value } => resolve_payload(payload, path)
+            .and_then(|v| json_value_cmp_scalar(v, value))
+            .map(|ord| ord != std::cmp::Ordering::Greater)
+            .unwrap_or(false),
+        Condition::FieldIn { path, values } => resolve_payload(payload, path)
+            .map(|v| values.iter().any(|s| json_value_eq_scalar(v, s)))
+            .unwrap_or(false),
         Condition::FieldExists { path } => resolve_payload(payload, path).is_some(),
-        Condition::FieldAbsent { path } => {
-            resolve_payload(payload, path)
-                .map(|v| v.is_null())
-                .unwrap_or(true)
-        }
-        Condition::FieldMatches { path, pattern } => {
-            resolve_payload(payload, path)
-                .and_then(|v| v.as_str())
-                .map(|s| pattern.matches(s))
-                .unwrap_or(false)
-        }
+        Condition::FieldAbsent { path } => resolve_payload(payload, path)
+            .map(|v| v.is_null())
+            .unwrap_or(true),
+        Condition::FieldMatches { path, pattern } => resolve_payload(payload, path)
+            .and_then(|v| v.as_str())
+            .map(|s| pattern.matches(s))
+            .unwrap_or(false),
 
         // --- Tag conditions ---
         Condition::TagEq { key, value } => context
@@ -295,14 +270,12 @@ fn eval_condition(
         Condition::TagAbsent { key } => !context.tags.contains_key(key.as_str()),
 
         // --- Provenance conditions ---
-        Condition::SourceNode { node_id } => context
-            .source_node
-            .map(|n| n == node_id)
-            .unwrap_or(false),
-        Condition::ArrivedOnPort { port_id } => context
-            .arrival_port
-            .map(|p| p == port_id)
-            .unwrap_or(false),
+        Condition::SourceNode { node_id } => {
+            context.source_node.map(|n| n == node_id).unwrap_or(false)
+        }
+        Condition::ArrivedOnPort { port_id } => {
+            context.arrival_port.map(|p| p == port_id).unwrap_or(false)
+        }
         Condition::HopCountGt { n } => context.hop_count > *n,
         Condition::HopCountLte { n } => context.hop_count <= *n,
 
@@ -424,25 +397,33 @@ fn condition_description(condition: &Condition) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
     use bytes::Bytes;
+    use pureflow_core::context::ExecutionMetadata;
     use pureflow_core::message::{MessageEndpoint, MessageMetadata, MessageRoute};
     use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
-    use pureflow_core::context::ExecutionMetadata;
     use serde_json::json;
+    use std::collections::BTreeMap;
 
     use crate::{
+        action::RuleAction,
         condition::{EvalContext, FieldPath, GlobPattern, ScalarValue},
         rule::{EvaluationStrategy, Rule, RuleSet},
-        action::RuleAction,
     };
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    fn node_id(s: &str) -> NodeId { NodeId::new(s).unwrap() }
-    fn port_id(s: &str) -> PortId { PortId::new(s).unwrap() }
-    fn workflow_id(s: &str) -> WorkflowId { WorkflowId::new(s).unwrap() }
-    fn field(s: &str) -> FieldPath { FieldPath::new(s).unwrap() }
+    fn node_id(s: &str) -> NodeId {
+        NodeId::new(s).unwrap()
+    }
+    fn port_id(s: &str) -> PortId {
+        PortId::new(s).unwrap()
+    }
+    fn workflow_id(s: &str) -> WorkflowId {
+        WorkflowId::new(s).unwrap()
+    }
+    fn field(s: &str) -> FieldPath {
+        FieldPath::new(s).unwrap()
+    }
 
     fn packet(payload: PacketPayload) -> PortPacket {
         let src = MessageEndpoint::new(node_id("src"), port_id("out"));
@@ -481,10 +462,19 @@ mod tests {
     }
 
     fn first_match_set(rules: Vec<Rule>) -> RuleSet {
-        RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+        RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap()
     }
 
-    fn evaluator() -> RuleSetEvaluator { RuleSetEvaluator }
+    fn evaluator() -> RuleSetEvaluator {
+        RuleSetEvaluator
+    }
 
     // ── Constant conditions ───────────────────────────────────────────────────
 
@@ -494,7 +484,11 @@ mod tests {
         let tags = BTreeMap::new();
         let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
-        assert!(eval_condition(&Condition::Always, &PacketPayload::control(json!({})), &ctx));
+        assert!(eval_condition(
+            &Condition::Always,
+            &PacketPayload::control(json!({})),
+            &ctx
+        ));
     }
 
     #[test]
@@ -503,7 +497,11 @@ mod tests {
         let tags = BTreeMap::new();
         let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
-        assert!(!eval_condition(&Condition::Never, &PacketPayload::control(json!({})), &ctx));
+        assert!(!eval_condition(
+            &Condition::Never,
+            &PacketPayload::control(json!({})),
+            &ctx
+        ));
     }
 
     // ── Payload conditions ────────────────────────────────────────────────────
@@ -511,32 +509,52 @@ mod tests {
     #[test]
     fn field_eq_matches_string() {
         let p = PacketPayload::control(json!({"status": "approved"}));
-        let cond = Condition::FieldEq { path: field("status"), value: ScalarValue::String("approved".into()) };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldEq {
+            path: field("status"),
+            value: ScalarValue::String("approved".into()),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_eq_rejects_mismatch() {
         let p = PacketPayload::control(json!({"status": "declined"}));
-        let cond = Condition::FieldEq { path: field("status"), value: ScalarValue::String("approved".into()) };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldEq {
+            path: field("status"),
+            value: ScalarValue::String("approved".into()),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(!eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_gte_integer() {
         let p = PacketPayload::control(json!({"amount": 15000}));
-        let cond = Condition::FieldGte { path: field("amount"), value: ScalarValue::Integer(10000) };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldGte {
+            path: field("amount"),
+            value: ScalarValue::Integer(10000),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_lt_integer_fails_when_equal() {
         let p = PacketPayload::control(json!({"amount": 100}));
-        let cond = Condition::FieldLt { path: field("amount"), value: ScalarValue::Integer(100) };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldLt {
+            path: field("amount"),
+            value: ScalarValue::Integer(100),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(!eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
@@ -545,41 +563,64 @@ mod tests {
         let p = PacketPayload::control(json!({"tier": "gold"}));
         let cond = Condition::FieldIn {
             path: field("tier"),
-            values: vec![ScalarValue::String("silver".into()), ScalarValue::String("gold".into())],
+            values: vec![
+                ScalarValue::String("silver".into()),
+                ScalarValue::String("gold".into()),
+            ],
         };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_exists_on_present_key() {
         let p = PacketPayload::control(json!({"region": "us-east-1"}));
-        let cond = Condition::FieldExists { path: field("region") };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldExists {
+            path: field("region"),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_absent_on_missing_key() {
         let p = PacketPayload::control(json!({"region": "us-east-1"}));
-        let cond = Condition::FieldAbsent { path: field("currency") };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldAbsent {
+            path: field("currency"),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn field_matches_glob() {
         let p = PacketPayload::control(json!({"path": "/api/v2/users"}));
-        let cond = Condition::FieldMatches { path: field("path"), pattern: GlobPattern::new("/api/v*/users") };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldMatches {
+            path: field("path"),
+            pattern: GlobPattern::new("/api/v*/users"),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
     #[test]
     fn dotted_field_path_resolves_nested_field() {
         let p = PacketPayload::control(json!({"account": {"type": "premium"}}));
-        let cond = Condition::FieldEq { path: field("account.type"), value: ScalarValue::String("premium".into()) };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let cond = Condition::FieldEq {
+            path: field("account.type"),
+            value: ScalarValue::String("premium".into()),
+        };
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
@@ -587,7 +628,9 @@ mod tests {
     fn bytes_payload_returns_false_for_field_conditions() {
         let p = PacketPayload::Bytes(bytes::Bytes::from_static(b"raw"));
         let cond = Condition::FieldExists { path: field("x") };
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         assert!(!eval_condition(&cond, &p, &empty_ctx(&tags, &meta, &wf)));
     }
 
@@ -599,45 +642,82 @@ mod tests {
         let mut tags = BTreeMap::new();
         tags.insert("priority".into(), ScalarValue::String("high".into()));
         let meta = BTreeMap::new();
-        let cond = Condition::TagEq { key: "priority".into(), value: ScalarValue::String("high".into()) };
-        assert!(eval_condition(&cond, &PacketPayload::control(json!({})), &empty_ctx(&tags, &meta, &wf)));
+        let cond = Condition::TagEq {
+            key: "priority".into(),
+            value: ScalarValue::String("high".into()),
+        };
+        assert!(eval_condition(
+            &cond,
+            &PacketPayload::control(json!({})),
+            &empty_ctx(&tags, &meta, &wf)
+        ));
     }
 
     #[test]
     fn tag_absent_when_key_missing() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
-        let cond = Condition::TagAbsent { key: "urgent".into() };
-        assert!(eval_condition(&cond, &PacketPayload::control(json!({})), &empty_ctx(&tags, &meta, &wf)));
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
+        let cond = Condition::TagAbsent {
+            key: "urgent".into(),
+        };
+        assert!(eval_condition(
+            &cond,
+            &PacketPayload::control(json!({})),
+            &empty_ctx(&tags, &meta, &wf)
+        ));
     }
 
     #[test]
     fn tag_exists_false_when_key_missing() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
-        let cond = Condition::TagExists { key: "urgent".into() };
-        assert!(!eval_condition(&cond, &PacketPayload::control(json!({})), &empty_ctx(&tags, &meta, &wf)));
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
+        let cond = Condition::TagExists {
+            key: "urgent".into(),
+        };
+        assert!(!eval_condition(
+            &cond,
+            &PacketPayload::control(json!({})),
+            &empty_ctx(&tags, &meta, &wf)
+        ));
     }
 
     // ── Provenance conditions ─────────────────────────────────────────────────
 
     #[test]
     fn source_node_matches() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let src = node_id("validator");
         let ctx = EvalContext {
-            tags: &tags, source_node: Some(&src), arrival_port: None,
-            hop_count: 0, workflow_id: &wf, execution_metadata: &meta,
+            tags: &tags,
+            source_node: Some(&src),
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
         };
         let p = PacketPayload::control(json!({}));
-        let cond = Condition::SourceNode { node_id: node_id("validator") };
+        let cond = Condition::SourceNode {
+            node_id: node_id("validator"),
+        };
         assert!(eval_condition(&cond, &p, &ctx));
     }
 
     #[test]
     fn hop_count_gt_fires_when_exceeded() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = EvalContext {
-            tags: &tags, source_node: None, arrival_port: None,
-            hop_count: 5, workflow_id: &wf, execution_metadata: &meta,
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 5,
+            workflow_id: &wf,
+            execution_metadata: &meta,
         };
         let p = PacketPayload::control(json!({}));
         assert!(eval_condition(&Condition::HopCountGt { n: 3 }, &p, &ctx));
@@ -646,12 +726,18 @@ mod tests {
 
     #[test]
     fn workflow_is_matches_correct_workflow() {
-        let wf = workflow_id("payment-flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("payment-flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
         let p = PacketPayload::control(json!({}));
-        let cond = Condition::WorkflowIs { workflow_id: workflow_id("payment-flow") };
+        let cond = Condition::WorkflowIs {
+            workflow_id: workflow_id("payment-flow"),
+        };
         assert!(eval_condition(&cond, &p, &ctx));
-        let wrong = Condition::WorkflowIs { workflow_id: workflow_id("other-flow") };
+        let wrong = Condition::WorkflowIs {
+            workflow_id: workflow_id("other-flow"),
+        };
         assert!(!eval_condition(&wrong, &p, &ctx));
     }
 
@@ -659,40 +745,78 @@ mod tests {
 
     #[test]
     fn and_requires_all_true() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
         let p = PacketPayload::control(json!({}));
-        assert!(eval_condition(&Condition::And(vec![Condition::Always, Condition::Always]), &p, &ctx));
-        assert!(!eval_condition(&Condition::And(vec![Condition::Always, Condition::Never]), &p, &ctx));
+        assert!(eval_condition(
+            &Condition::And(vec![Condition::Always, Condition::Always]),
+            &p,
+            &ctx
+        ));
+        assert!(!eval_condition(
+            &Condition::And(vec![Condition::Always, Condition::Never]),
+            &p,
+            &ctx
+        ));
     }
 
     #[test]
     fn or_requires_at_least_one_true() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
         let p = PacketPayload::control(json!({}));
-        assert!(eval_condition(&Condition::Or(vec![Condition::Never, Condition::Always]), &p, &ctx));
-        assert!(!eval_condition(&Condition::Or(vec![Condition::Never, Condition::Never]), &p, &ctx));
+        assert!(eval_condition(
+            &Condition::Or(vec![Condition::Never, Condition::Always]),
+            &p,
+            &ctx
+        ));
+        assert!(!eval_condition(
+            &Condition::Or(vec![Condition::Never, Condition::Never]),
+            &p,
+            &ctx
+        ));
     }
 
     #[test]
     fn not_inverts_condition() {
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
         let p = PacketPayload::control(json!({}));
-        assert!(eval_condition(&Condition::Not(Box::new(Condition::Never)), &p, &ctx));
-        assert!(!eval_condition(&Condition::Not(Box::new(Condition::Always)), &p, &ctx));
+        assert!(eval_condition(
+            &Condition::Not(Box::new(Condition::Never)),
+            &p,
+            &ctx
+        ));
+        assert!(!eval_condition(
+            &Condition::Not(Box::new(Condition::Always)),
+            &p,
+            &ctx
+        ));
     }
 
     #[test]
     fn deeply_nested_and_or_not() {
         // NOT (amount < 100 AND status == "pending") → true when amount >= 100
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let ctx = empty_ctx(&tags, &meta, &wf);
         let p = PacketPayload::control(json!({"amount": 500, "status": "pending"}));
         let nested = Condition::Not(Box::new(Condition::And(vec![
-            Condition::FieldLt { path: field("amount"), value: ScalarValue::Integer(100) },
-            Condition::FieldEq { path: field("status"), value: ScalarValue::String("pending".into()) },
+            Condition::FieldLt {
+                path: field("amount"),
+                value: ScalarValue::Integer(100),
+            },
+            Condition::FieldEq {
+                path: field("status"),
+                value: ScalarValue::String("pending".into()),
+            },
         ])));
         assert!(eval_condition(&nested, &p, &ctx));
     }
@@ -702,15 +826,35 @@ mod tests {
     #[test]
     fn first_match_routes_to_first_matching_rule() {
         let rules = vec![
-            rule("high", Condition::FieldGte { path: field("amount"), value: ScalarValue::Integer(10000) },
-                 RuleAction::Route(port_id("high-out")), 10),
-            rule("standard", Condition::Always, RuleAction::Route(port_id("std-out")), 20),
+            rule(
+                "high",
+                Condition::FieldGte {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(10000),
+                },
+                RuleAction::Route(port_id("high-out")),
+                10,
+            ),
+            rule(
+                "standard",
+                Condition::Always,
+                RuleAction::Route(port_id("std-out")),
+                20,
+            ),
         ];
         let rs = first_match_set(rules);
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({"amount": 50000}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert_eq!(decision.matched_rule.as_deref(), Some("high"));
         assert_eq!(decision.action, RuleAction::Route(port_id("high-out")));
@@ -718,15 +862,35 @@ mod tests {
 
     #[test]
     fn first_match_falls_through_to_default_when_no_rule_matches() {
-        let rules = vec![
-            rule("big", Condition::FieldGte { path: field("amount"), value: ScalarValue::Integer(10000) },
-                 RuleAction::Route(port_id("big-out")), 10),
-        ];
-        let rs = RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap();
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let rules = vec![rule(
+            "big",
+            Condition::FieldGte {
+                path: field("amount"),
+                value: ScalarValue::Integer(10000),
+            },
+            RuleAction::Route(port_id("big-out")),
+            10,
+        )];
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({"amount": 50}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert!(decision.matched_rule.is_none());
         assert_eq!(decision.action, RuleAction::Drop);
@@ -735,15 +899,35 @@ mod tests {
     #[test]
     fn first_match_applies_tag_actions_before_terminal() {
         let rules = vec![
-            rule("tag-it", Condition::Always,
-                 RuleAction::Tag { key: "flagged".into(), value: ScalarValue::Boolean(true) }, 5),
-            rule("route-it", Condition::Always, RuleAction::Route(port_id("out")), 10),
+            rule(
+                "tag-it",
+                Condition::Always,
+                RuleAction::Tag {
+                    key: "flagged".into(),
+                    value: ScalarValue::Boolean(true),
+                },
+                5,
+            ),
+            rule(
+                "route-it",
+                Condition::Always,
+                RuleAction::Route(port_id("out")),
+                10,
+            ),
         ];
         let rs = first_match_set(rules);
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert_eq!(decision.tags_applied.len(), 1);
         assert_eq!(decision.tags_applied[0].0, "flagged");
@@ -755,16 +939,45 @@ mod tests {
     #[test]
     fn all_matches_collects_all_tags_and_applies_default() {
         let rules = vec![
-            rule("t1", Condition::Always,
-                 RuleAction::Tag { key: "a".into(), value: ScalarValue::Integer(1) }, 10),
-            rule("t2", Condition::Always,
-                 RuleAction::Tag { key: "b".into(), value: ScalarValue::Integer(2) }, 20),
+            rule(
+                "t1",
+                Condition::Always,
+                RuleAction::Tag {
+                    key: "a".into(),
+                    value: ScalarValue::Integer(1),
+                },
+                10,
+            ),
+            rule(
+                "t2",
+                Condition::Always,
+                RuleAction::Tag {
+                    key: "b".into(),
+                    value: ScalarValue::Integer(2),
+                },
+                20,
+            ),
         ];
-        let rs = RuleSet::new("test", EvaluationStrategy::AllMatches, rules, RuleAction::Route(port_id("out")), false).unwrap();
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::AllMatches,
+            rules,
+            RuleAction::Route(port_id("out")),
+            false,
+        )
+        .unwrap();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert_eq!(decision.tags_applied.len(), 2);
         assert_eq!(decision.action, RuleAction::Route(port_id("out")));
@@ -776,14 +989,39 @@ mod tests {
     #[test]
     fn score_selects_highest_priority_matching_rule() {
         let rules = vec![
-            rule("low-pri", Condition::Always, RuleAction::Route(port_id("low")), 100),
-            rule("high-pri", Condition::Always, RuleAction::Route(port_id("high")), 10),
+            rule(
+                "low-pri",
+                Condition::Always,
+                RuleAction::Route(port_id("low")),
+                100,
+            ),
+            rule(
+                "high-pri",
+                Condition::Always,
+                RuleAction::Route(port_id("high")),
+                10,
+            ),
         ];
-        let rs = RuleSet::new("test", EvaluationStrategy::Score, rules, RuleAction::Drop, false).unwrap();
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::Score,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         // priority 10 (high-pri) wins over priority 100 (low-pri)
         assert_eq!(decision.matched_rule.as_deref(), Some("high-pri"));
@@ -794,32 +1032,74 @@ mod tests {
 
     #[test]
     fn trace_disabled_produces_empty_conditions_evaluated() {
-        let rules = vec![rule("r", Condition::Always, RuleAction::Route(port_id("out")), 10)];
-        let rs = RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap();
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let rules = vec![rule(
+            "r",
+            Condition::Always,
+            RuleAction::Route(port_id("out")),
+            10,
+        )];
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert!(decision.conditions_evaluated.is_empty());
     }
 
     #[test]
     fn trace_enabled_records_conditions_with_surface() {
-        let rules = vec![
-            rule("check-amount",
-                 Condition::FieldGte { path: field("amount"), value: ScalarValue::Integer(100) },
-                 RuleAction::Route(port_id("out")), 10),
-        ];
-        let rs = RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, true).unwrap();
-        let wf = workflow_id("flow"); let tags = BTreeMap::new(); let meta = BTreeMap::new();
+        let rules = vec![rule(
+            "check-amount",
+            Condition::FieldGte {
+                path: field("amount"),
+                value: ScalarValue::Integer(100),
+            },
+            RuleAction::Route(port_id("out")),
+            10,
+        )];
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            true,
+        )
+        .unwrap();
+        let wf = workflow_id("flow");
+        let tags = BTreeMap::new();
+        let meta = BTreeMap::new();
         let p = control_packet(json!({"amount": 200}));
-        let ctx = EvalContext { tags: &tags, source_node: None,
-            arrival_port: None, hop_count: 0, workflow_id: &wf, execution_metadata: &meta };
+        let ctx = EvalContext {
+            tags: &tags,
+            source_node: None,
+            arrival_port: None,
+            hop_count: 0,
+            workflow_id: &wf,
+            execution_metadata: &meta,
+        };
         let decision = evaluator().evaluate(&rs, &p, &ctx).unwrap();
         assert_eq!(decision.conditions_evaluated.len(), 1);
         assert_eq!(decision.conditions_evaluated[0].rule_id, "check-amount");
         assert!(decision.conditions_evaluated[0].matched);
-        assert_eq!(decision.conditions_evaluated[0].surface, ConditionSurfaceRecord::Payload);
+        assert_eq!(
+            decision.conditions_evaluated[0].surface,
+            ConditionSurfaceRecord::Payload
+        );
     }
 }

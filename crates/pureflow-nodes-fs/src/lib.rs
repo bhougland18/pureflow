@@ -126,12 +126,7 @@ impl NodeExecutor for FsWatcherNode {
     }
 }
 
-fn make_packet(
-    ctx: &NodeContext,
-    port: &PortId,
-    payload: Vec<u8>,
-    seq: u64,
-) -> Result<PortPacket> {
+fn make_packet(ctx: &NodeContext, port: &PortId, payload: Vec<u8>, seq: u64) -> Result<PortPacket> {
     let source = MessageEndpoint::new(ctx.node_id().clone(), port.clone());
     let target = MessageEndpoint::new(ctx.node_id().clone(), port.clone());
     let route = MessageRoute::new(Some(source), target);
@@ -151,7 +146,9 @@ mod tests {
     use std::num::NonZeroUsize;
     use std::time::Duration;
 
-    use pureflow_core::{InputPortHandle, OutputPortHandle, PortsIn, PortsOut, bounded_edge_channel};
+    use pureflow_core::{
+        InputPortHandle, OutputPortHandle, PortsIn, PortsOut, bounded_edge_channel,
+    };
     use pureflow_runtime::AsupersyncRuntime;
     use pureflow_test_kit::{execution_metadata, node_id, port_id, test_packet, workflow_id};
     use tempfile::TempDir;
@@ -159,7 +156,11 @@ mod tests {
     use super::*;
 
     fn test_ctx() -> NodeContext {
-        NodeContext::new(workflow_id("test-flow"), node_id("watcher"), execution_metadata("run-1"))
+        NodeContext::new(
+            workflow_id("test-flow"),
+            node_id("watcher"),
+            execution_metadata("run-1"),
+        )
     }
 
     fn make_edge(src: &str, dst: &str) -> (OutputPortHandle, InputPortHandle) {

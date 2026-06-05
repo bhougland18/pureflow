@@ -1,9 +1,7 @@
 //! Introspection projection for rule sets.
 
 use pureflow_core::RuleEvalStrategy;
-use pureflow_rules::{
-    Condition, ConditionSurface, EvaluationStrategy, RuleAction, RuleSet,
-};
+use pureflow_rules::{Condition, ConditionSurface, EvaluationStrategy, RuleAction, RuleSet};
 use pureflow_types::PortId;
 
 /// Introspectable view of a rule set, produced without executing any rules.
@@ -245,11 +243,20 @@ fn detect_unreachable(rule_set: &RuleSet) -> Vec<UnreachableRule> {
 
         // Exact FieldEq subsumption: scan for duplicate conditions.
         for (i, rule) in rule_set.rules.iter().enumerate() {
-            if let Condition::FieldEq { path: p1, value: v1 } = &rule.condition {
+            if let Condition::FieldEq {
+                path: p1,
+                value: v1,
+            } = &rule.condition
+            {
                 // Look at all later (lower-priority) rules.
                 for later in &rule_set.rules[i + 1..] {
-                    if let Condition::FieldEq { path: p2, value: v2 } = &later.condition {
-                        if p1 == p2 && v1 == v2
+                    if let Condition::FieldEq {
+                        path: p2,
+                        value: v2,
+                    } = &later.condition
+                    {
+                        if p1 == p2
+                            && v1 == v2
                             && !unreachable.iter().any(|u| u.rule_id == later.id)
                         {
                             unreachable.push(UnreachableRule {
@@ -275,21 +282,32 @@ fn is_never(condition: &Condition) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use pureflow_rules::{
-        Condition, FieldPath, Rule, RuleAction, RuleSet, ScalarValue, EvaluationStrategy,
+        Condition, EvaluationStrategy, FieldPath, Rule, RuleAction, RuleSet, ScalarValue,
     };
     use pureflow_types::PortId;
+    use std::sync::Arc;
 
-    fn port(s: &str) -> PortId { PortId::new(s).unwrap() }
-    fn field(s: &str) -> FieldPath { FieldPath::new(s).unwrap() }
+    fn port(s: &str) -> PortId {
+        PortId::new(s).unwrap()
+    }
+    fn field(s: &str) -> FieldPath {
+        FieldPath::new(s).unwrap()
+    }
 
     fn rule(id: &str, cond: Condition, action: RuleAction, pri: u32) -> Rule {
         Rule::new(id, cond, action, pri, "test rule").unwrap()
     }
 
     fn first_match_set(rules: Vec<Rule>) -> RuleSet {
-        RuleSet::new("test", EvaluationStrategy::FirstMatch, rules, RuleAction::Drop, false).unwrap()
+        RuleSet::new(
+            "test",
+            EvaluationStrategy::FirstMatch,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -312,17 +330,30 @@ mod tests {
         let view = introspect_rule_set(&rs);
         assert_eq!(view.unreachable_rules.len(), 1);
         assert_eq!(view.unreachable_rules[0].rule_id, "dead");
-        assert_eq!(view.unreachable_rules[0].reason, UnreachableReason::ConditionIsNever);
+        assert_eq!(
+            view.unreachable_rules[0].reason,
+            UnreachableReason::ConditionIsNever
+        );
     }
 
     #[test]
     fn always_shadows_lower_priority_rules_in_first_match() {
         let rules = vec![
-            rule("catch-all", Condition::Always, RuleAction::Route(port("out")), 10),
-            rule("unreachable", Condition::FieldGte {
-                path: field("amount"),
-                value: ScalarValue::Integer(100),
-            }, RuleAction::Route(port("other")), 20),
+            rule(
+                "catch-all",
+                Condition::Always,
+                RuleAction::Route(port("out")),
+                10,
+            ),
+            rule(
+                "unreachable",
+                Condition::FieldGte {
+                    path: field("amount"),
+                    value: ScalarValue::Integer(100),
+                },
+                RuleAction::Route(port("other")),
+                20,
+            ),
         ];
         let rs = first_match_set(rules);
         let view = introspect_rule_set(&rs);
@@ -338,30 +369,63 @@ mod tests {
     #[test]
     fn always_does_not_shadow_in_all_matches() {
         let rules = vec![
-            rule("t1", Condition::Always, RuleAction::Tag {
-                key: "a".into(), value: ScalarValue::Boolean(true)
-            }, 10),
-            rule("t2", Condition::Always, RuleAction::Tag {
-                key: "b".into(), value: ScalarValue::Boolean(true)
-            }, 20),
+            rule(
+                "t1",
+                Condition::Always,
+                RuleAction::Tag {
+                    key: "a".into(),
+                    value: ScalarValue::Boolean(true),
+                },
+                10,
+            ),
+            rule(
+                "t2",
+                Condition::Always,
+                RuleAction::Tag {
+                    key: "b".into(),
+                    value: ScalarValue::Boolean(true),
+                },
+                20,
+            ),
         ];
-        let rs = RuleSet::new("test", EvaluationStrategy::AllMatches, rules, RuleAction::Drop, false).unwrap();
+        let rs = RuleSet::new(
+            "test",
+            EvaluationStrategy::AllMatches,
+            rules,
+            RuleAction::Drop,
+            false,
+        )
+        .unwrap();
         let view = introspect_rule_set(&rs);
         // AllMatches evaluates all rules — no shadowing.
-        assert!(view.unreachable_rules.iter().all(|u| u.reason != UnreachableReason::ConditionIsNever));
+        assert!(
+            view.unreachable_rules
+                .iter()
+                .all(|u| u.reason != UnreachableReason::ConditionIsNever)
+        );
     }
 
     #[test]
     fn exact_field_eq_subsumption_is_flagged() {
         let rules = vec![
-            rule("first", Condition::FieldEq {
-                path: field("status"),
-                value: ScalarValue::String("approved".into()),
-            }, RuleAction::Route(port("fast")), 10),
-            rule("duplicate", Condition::FieldEq {
-                path: field("status"),
-                value: ScalarValue::String("approved".into()),
-            }, RuleAction::Route(port("slow")), 20),
+            rule(
+                "first",
+                Condition::FieldEq {
+                    path: field("status"),
+                    value: ScalarValue::String("approved".into()),
+                },
+                RuleAction::Route(port("fast")),
+                10,
+            ),
+            rule(
+                "duplicate",
+                Condition::FieldEq {
+                    path: field("status"),
+                    value: ScalarValue::String("approved".into()),
+                },
+                RuleAction::Route(port("slow")),
+                20,
+            ),
         ];
         let rs = first_match_set(rules);
         let view = introspect_rule_set(&rs);
@@ -377,14 +441,24 @@ mod tests {
     #[test]
     fn different_field_values_are_not_subsumed() {
         let rules = vec![
-            rule("approved", Condition::FieldEq {
-                path: field("status"),
-                value: ScalarValue::String("approved".into()),
-            }, RuleAction::Route(port("approved-out")), 10),
-            rule("declined", Condition::FieldEq {
-                path: field("status"),
-                value: ScalarValue::String("declined".into()),
-            }, RuleAction::Route(port("declined-out")), 20),
+            rule(
+                "approved",
+                Condition::FieldEq {
+                    path: field("status"),
+                    value: ScalarValue::String("approved".into()),
+                },
+                RuleAction::Route(port("approved-out")),
+                10,
+            ),
+            rule(
+                "declined",
+                Condition::FieldEq {
+                    path: field("status"),
+                    value: ScalarValue::String("declined".into()),
+                },
+                RuleAction::Route(port("declined-out")),
+                20,
+            ),
         ];
         let rs = first_match_set(rules);
         let view = introspect_rule_set(&rs);
@@ -406,8 +480,14 @@ mod tests {
     #[test]
     fn condition_surface_summary_mixed_and_condition() {
         let cond = Condition::And(vec![
-            Condition::FieldGte { path: field("amount"), value: ScalarValue::Integer(100) },
-            Condition::TagEq { key: "priority".into(), value: ScalarValue::String("high".into()) },
+            Condition::FieldGte {
+                path: field("amount"),
+                value: ScalarValue::Integer(100),
+            },
+            Condition::TagEq {
+                key: "priority".into(),
+                value: ScalarValue::String("high".into()),
+            },
         ]);
         let summary = collect_surfaces(&cond);
         assert!(summary.payload);
@@ -417,9 +497,12 @@ mod tests {
 
     #[test]
     fn rule_introspection_target_ports_for_route() {
-        let rules = vec![
-            rule("r", Condition::Always, RuleAction::Route(port("out")), 10),
-        ];
+        let rules = vec![rule(
+            "r",
+            Condition::Always,
+            RuleAction::Route(port("out")),
+            10,
+        )];
         let rs = first_match_set(rules);
         let view = introspect_rule_set(&rs);
         assert_eq!(view.rules[0].target_ports, vec![port("out")]);
@@ -436,17 +519,27 @@ mod tests {
     #[test]
     fn never_shadowed_by_always_are_not_double_reported() {
         let rules = vec![
-            rule("catch-all", Condition::Always, RuleAction::Route(port("out")), 10),
+            rule(
+                "catch-all",
+                Condition::Always,
+                RuleAction::Route(port("out")),
+                10,
+            ),
             rule("never-rule", Condition::Never, RuleAction::Drop, 20),
         ];
         let rs = first_match_set(rules);
         let view = introspect_rule_set(&rs);
         // never-rule is shadowed by catch-all BUT was already flagged as Never.
         // Only one report per rule.
-        let count = view.unreachable_rules.iter()
+        let count = view
+            .unreachable_rules
+            .iter()
             .filter(|u| u.rule_id == "never-rule")
             .count();
         assert_eq!(count, 1, "never-rule should only be reported once");
-        assert_eq!(view.unreachable_rules[0].reason, UnreachableReason::ConditionIsNever);
+        assert_eq!(
+            view.unreachable_rules[0].reason,
+            UnreachableReason::ConditionIsNever
+        );
     }
 }

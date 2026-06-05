@@ -16,7 +16,7 @@ use std::{
 };
 
 use pureflow_core::{
-    BatchExecutor, BatchInputs, BatchOutputs, PureflowError, PacketPayload, PortPacket, Result,
+    BatchExecutor, BatchInputs, BatchOutputs, PacketPayload, PortPacket, PureflowError, Result,
     capability::{CapabilityValidationError, NodeCapabilities},
     context::{CancellationRequest, CancellationToken, ExecutionAttempt, ExecutionMetadata},
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
@@ -386,7 +386,9 @@ impl CancellationWatcher {
                 }
             })
             .map_err(|err: std::io::Error| {
-                PureflowError::execution(format!("failed to start WASM cancellation watcher: {err}"))
+                PureflowError::execution(format!(
+                    "failed to start WASM cancellation watcher: {err}"
+                ))
             })?;
 
         Ok(Self {

@@ -15,8 +15,8 @@ pub use batch::{BatchExecutor, BatchInputs, BatchOutputs, WasmModule};
 use context::NodeContext;
 pub use context::{CancellationHandle, CancellationToken};
 pub use error::{
-    CancellationError, PureflowError, ErrorCode, ErrorVisibility, ExecutionError, LifecycleError,
-    MetadataError, RetryDisposition, ValidationError,
+    CancellationError, ErrorCode, ErrorVisibility, ExecutionError, LifecycleError, MetadataError,
+    PureflowError, RetryDisposition, ValidationError,
 };
 pub use message::PacketPayload;
 pub use metadata::{

@@ -158,11 +158,7 @@ impl WasmtimeRuleComponent {
     /// Returns an error if the component cannot instantiate, the guest traps or
     /// exceeds its fuel budget, the guest reports a `rule-error`, or the guest
     /// returns a malformed decision.
-    pub fn evaluate(
-        &self,
-        rule_set: &RuleSet,
-        context: &HostEvalContext,
-    ) -> Result<RuleDecision> {
+    pub fn evaluate(&self, rule_set: &RuleSet, context: &HostEvalContext) -> Result<RuleDecision> {
         self.evaluate_with_cancellation(rule_set, context, &CancellationToken::active())
     }
 
@@ -206,7 +202,9 @@ impl WasmtimeRuleComponent {
         let interface_index: ComponentExportIndex = instance
             .get_export_index(&mut store, None, RULES_INTERFACE_EXPORT)
             .ok_or_else(|| {
-                PureflowError::execution(format!("component does not export {RULES_INTERFACE_EXPORT}"))
+                PureflowError::execution(format!(
+                    "component does not export {RULES_INTERFACE_EXPORT}"
+                ))
             })?;
         let evaluate_index: ComponentExportIndex = instance
             .get_export_index(&mut store, Some(&interface_index), EVALUATE_EXPORT)
@@ -228,8 +226,9 @@ impl WasmtimeRuleComponent {
             return Err(PureflowError::cancelled(reason));
         }
         let remaining_fuel: Option<u64> = store.get_fuel().ok();
-        call_result
-            .map_err(|err: wasmtime::Error| map_guest_call_error(&err, self.limits, remaining_fuel))?;
+        call_result.map_err(|err: wasmtime::Error| {
+            map_guest_call_error(&err, self.limits, remaining_fuel)
+        })?;
 
         let [result]: [Val; 1] = results;
         decision_from_result_val(result)
@@ -262,7 +261,10 @@ fn rule_set_to_val(rule_set: &RuleSet) -> Result<Val> {
 fn rule_to_val(rule: &pureflow_rules::Rule) -> Result<Val> {
     Ok(Val::Record(vec![
         ("id".to_owned(), Val::String(rule.id.clone())),
-        ("condition".to_owned(), condition_tree_to_val(&rule.condition)),
+        (
+            "condition".to_owned(),
+            condition_tree_to_val(&rule.condition),
+        ),
         ("action".to_owned(), action_to_val(&rule.action)),
         ("priority".to_owned(), Val::U32(rule.priority)),
         (
@@ -283,16 +285,10 @@ fn strategy_to_val(strategy: EvaluationStrategy) -> Val {
 
 fn action_to_val(action: &RuleAction) -> Val {
     match action {
-        RuleAction::Route(port) => {
-            variant("route", Some(Val::String(port.to_string())))
-        }
+        RuleAction::Route(port) => variant("route", Some(Val::String(port.to_string()))),
         RuleAction::Drop => variant("drop", None),
-        RuleAction::DeadLetter(reason) => {
-            variant("dead-letter", Some(Val::String(reason.clone())))
-        }
-        RuleAction::Tag { key, value } => {
-            variant("tag", Some(scalar_entry_to_val(key, value)))
-        }
+        RuleAction::DeadLetter(reason) => variant("dead-letter", Some(Val::String(reason.clone()))),
+        RuleAction::Tag { key, value } => variant("tag", Some(scalar_entry_to_val(key, value))),
         RuleAction::Halt(message) => variant("halt", Some(Val::String(message.clone()))),
     }
 }
@@ -357,15 +353,9 @@ fn push_condition(condition: &Condition, nodes: &mut Vec<Val>) -> u32 {
                 ),
             ])),
         ),
-        Condition::TagEq { key, value } => {
-            variant("tag-eq", Some(scalar_entry_to_val(key, value)))
-        }
-        Condition::TagExists { key } => {
-            variant("tag-exists", Some(Val::String(key.clone())))
-        }
-        Condition::TagAbsent { key } => {
-            variant("tag-absent", Some(Val::String(key.clone())))
-        }
+        Condition::TagEq { key, value } => variant("tag-eq", Some(scalar_entry_to_val(key, value))),
+        Condition::TagExists { key } => variant("tag-exists", Some(Val::String(key.clone()))),
+        Condition::TagAbsent { key } => variant("tag-absent", Some(Val::String(key.clone()))),
         Condition::SourceNode { node_id } => {
             variant("source-node", Some(Val::String(node_id.to_string())))
         }
@@ -377,9 +367,10 @@ fn push_condition(condition: &Condition, nodes: &mut Vec<Val>) -> u32 {
         Condition::WorkflowIs { workflow_id } => {
             variant("workflow-is", Some(Val::String(workflow_id.to_string())))
         }
-        Condition::ExecutionMetadataEq { key, value } => {
-            variant("execution-metadata-eq", Some(scalar_entry_to_val(key, value)))
-        }
+        Condition::ExecutionMetadataEq { key, value } => variant(
+            "execution-metadata-eq",
+            Some(scalar_entry_to_val(key, value)),
+        ),
         Condition::And(children) => {
             let indices: Vec<Val> = children
                 .iter()
@@ -479,12 +470,15 @@ fn payload_to_val(payload: &PacketPayload) -> Result<Val> {
     match payload {
         PacketPayload::Bytes(bytes) => Ok(variant(
             "bytes",
-            Some(Val::List(bytes.iter().map(|byte: &u8| Val::U8(*byte)).collect())),
+            Some(Val::List(
+                bytes.iter().map(|byte: &u8| Val::U8(*byte)).collect(),
+            )),
         )),
         PacketPayload::Control(value) => {
-            let encoded: String = serde_json::to_string(value).map_err(|err: serde_json::Error| {
-                PureflowError::execution(format!("failed to encode control payload: {err}"))
-            })?;
+            let encoded: String =
+                serde_json::to_string(value).map_err(|err: serde_json::Error| {
+                    PureflowError::execution(format!("failed to encode control payload: {err}"))
+                })?;
             Ok(variant("control", Some(Val::String(encoded))))
         }
         #[allow(unreachable_patterns)]
@@ -571,9 +565,10 @@ fn action_from_val(value: Val) -> Result<RuleAction> {
             Ok(RuleAction::Route(port))
         }
         ("drop", _) => Ok(RuleAction::Drop),
-        ("dead-letter", Some(payload)) => {
-            Ok(RuleAction::DeadLetter(as_string(*payload, "dead-letter reason")?))
-        }
+        ("dead-letter", Some(payload)) => Ok(RuleAction::DeadLetter(as_string(
+            *payload,
+            "dead-letter reason",
+        )?)),
         ("tag", Some(payload)) => {
             let (key, value): (String, ScalarValue) = scalar_entry_from_val(*payload)?;
             Ok(RuleAction::Tag { key, value })
@@ -599,15 +594,21 @@ fn scalar_from_val(value: Val) -> Result<ScalarValue> {
         ("text", Some(payload)) => Ok(ScalarValue::String(as_string(*payload, "text scalar")?)),
         ("integer", Some(payload)) => match *payload {
             Val::S64(value) => Ok(ScalarValue::Integer(value)),
-            _ => Err(PureflowError::execution("guest returned non-s64 integer scalar")),
+            _ => Err(PureflowError::execution(
+                "guest returned non-s64 integer scalar",
+            )),
         },
         ("float-value", Some(payload)) => match *payload {
             Val::Float64(value) => Ok(ScalarValue::Float(value)),
-            _ => Err(PureflowError::execution("guest returned non-f64 float scalar")),
+            _ => Err(PureflowError::execution(
+                "guest returned non-f64 float scalar",
+            )),
         },
         ("boolean", Some(payload)) => match *payload {
             Val::Bool(value) => Ok(ScalarValue::Boolean(value)),
-            _ => Err(PureflowError::execution("guest returned non-bool boolean scalar")),
+            _ => Err(PureflowError::execution(
+                "guest returned non-bool boolean scalar",
+            )),
         },
         ("null-value", _) => Ok(ScalarValue::Null),
         (kind, _) => Err(PureflowError::execution(format!(
@@ -632,7 +633,12 @@ fn condition_trace_from_val(value: Val) -> Result<ConditionTrace> {
     // The WIT trace deliberately omits the per-condition description carried by
     // the native evaluator; the WASM boundary records only the surface it drew
     // from. Description is left empty rather than reconstructed.
-    Ok(ConditionTrace::new(rule_id, String::new(), matched, surface))
+    Ok(ConditionTrace::new(
+        rule_id,
+        String::new(),
+        matched,
+        surface,
+    ))
 }
 
 fn surface_from_val(value: Val) -> Result<ConditionSurfaceRecord> {
@@ -862,7 +868,10 @@ mod tests {
             ),
             (
                 "tags-applied".to_owned(),
-                Val::List(vec![scalar_entry_to_val("vip", &ScalarValue::Boolean(true))]),
+                Val::List(vec![scalar_entry_to_val(
+                    "vip",
+                    &ScalarValue::Boolean(true),
+                )]),
             ),
             (
                 "conditions-evaluated".to_owned(),
@@ -973,11 +982,19 @@ mod conformance {
     /// Compares the routing-relevant decision fields (action, matched rule, and
     /// applied tags). The per-condition trace description is intentionally not
     /// carried across the WIT boundary, so tracing is left disabled here.
-    fn assert_equivalent(component: &WasmtimeRuleComponent, rule_set: &RuleSet, packet: &PortPacket) {
+    fn assert_equivalent(
+        component: &WasmtimeRuleComponent,
+        rule_set: &RuleSet,
+        packet: &PortPacket,
+    ) {
         let workflow_id = WorkflowId::new("flow").expect("workflow id");
         let tags: BTreeMap<String, ScalarValue> = BTreeMap::new();
         let exec_meta: BTreeMap<String, ScalarValue> = BTreeMap::new();
-        let source_node = packet.metadata().route().source().map(MessageEndpoint::node_id);
+        let source_node = packet
+            .metadata()
+            .route()
+            .source()
+            .map(MessageEndpoint::node_id);
         let arrival_port = Some(packet.metadata().route().target().port_id());
 
         let native_ctx = EvalContext {
@@ -1006,7 +1023,10 @@ mod conformance {
             .expect("wasm evaluation succeeds");
 
         assert_eq!(wasm.action, native.action, "action mismatch");
-        assert_eq!(wasm.matched_rule, native.matched_rule, "matched-rule mismatch");
+        assert_eq!(
+            wasm.matched_rule, native.matched_rule,
+            "matched-rule mismatch"
+        );
         assert_eq!(wasm.tags_applied, native.tags_applied, "tags mismatch");
     }
 
@@ -1245,12 +1265,13 @@ mod conformance {
         )
         .expect("descriptor shape");
 
-        let err: PureflowError =
-            match WasmtimeRuleComponent::from_component_bytes_with_capabilities(&bytes, &capabilities)
-            {
-                Ok(_) => panic!("effect capability must be rejected"),
-                Err(err) => err,
-            };
+        let err: PureflowError = match WasmtimeRuleComponent::from_component_bytes_with_capabilities(
+            &bytes,
+            &capabilities,
+        ) {
+            Ok(_) => panic!("effect capability must be rejected"),
+            Err(err) => err,
+        };
         assert_eq!(err.code(), pureflow_core::ErrorCode::InvalidCapabilities);
         assert!(err.to_string().contains("not enforceable"));
     }
