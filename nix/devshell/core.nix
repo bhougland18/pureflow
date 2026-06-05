@@ -49,6 +49,7 @@
           native_cc.enable = lib.mkEnableOption "Native C/C++ interop toolchain support";
           ntm.enable = lib.mkEnableOption "Named Tmux Manager orchestration tooling";
           documentation.enable = lib.mkEnableOption "Documentation, PDF, and diagram tooling";
+          documentation.diagrams.enable = lib.mkEnableOption "frankenmermaid diagram rendering (opt-in; builds a cargo-vendor derivation)";
           rinf.enable = lib.mkEnableOption "rinf bridge tooling";
           rust_devtools.enable = lib.mkEnableOption "Optional Rust workflow and profiling CLI tooling";
           rust_lint_dylint.enable = lib.mkEnableOption "Dylint runtime and lint authoring support";
@@ -76,6 +77,7 @@
             native_cc.enable = lib.mkDefault true;
             ntm.enable = lib.mkDefault false;
             documentation.enable = lib.mkDefault false;
+            documentation.diagrams.enable = lib.mkDefault false;
             rinf.enable = lib.mkDefault true;
             rust_devtools.enable = lib.mkDefault true;
             rust_lint_dylint.enable = lib.mkDefault false;

@@ -93,14 +93,14 @@
           pkgs.quarto
           pkgs.typst
           pkgs.chromium
-          # frankenmermaid temporarily removed: its cargo-vendor build fetches
-          # crates from crates.io's download endpoint, which now returns HTTP 403
-          # and breaks every `nix develop` (and thus the CI validation gate).
-          # The derivation below is kept (unreferenced) for easy restore once the
-          # vendor fetch is fixed. Mermaid diagram SVGs are regenerated manually
-          # in the meantime. Tracked as pu-w25.
-          # frankenmermaid
-        ];
+        ]
+        # frankenmermaid is opt-in (documentation.diagrams.enable). Its
+        # cargo-vendor build fetches crates from crates.io's download endpoint,
+        # which currently returns HTTP 403 and breaks every `nix develop` (and
+        # thus the CI validation gate). Keeping it gated lets the base
+        # documentation shell build cleanly while diagram rendering stays
+        # available on demand. Tracked as pu-w25.
+        ++ lib.optional cfg.diagrams.enable frankenmermaid;
       };
     };
 }
