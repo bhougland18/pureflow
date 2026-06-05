@@ -9,7 +9,9 @@ description = "Wasmtime-backed WebAssembly batch node execution adapter for the 
 
 [dependencies]
 pureflow-core.workspace = true
+pureflow-rules.workspace = true
 pureflow-types.workspace = true
+bytes.workspace = true
 serde_json.workspace = true
 wasmtime.workspace = true
 
