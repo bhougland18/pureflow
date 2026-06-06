@@ -765,9 +765,7 @@ mod tests {
     impl QuickArbitrary for GeneratedValidGraph {
         fn arbitrary(g: &mut Gen) -> Self {
             let node_count = generated_count(g, 1, 6);
-            let nodes: Vec<NodeDefinition> = (0..node_count)
-                .map(|index| generated_routable_node(index))
-                .collect();
+            let nodes: Vec<NodeDefinition> = (0..node_count).map(generated_routable_node).collect();
             let mut edges = Vec::new();
 
             for source in 0..node_count {
@@ -782,7 +780,7 @@ mod tests {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Copy)]
     struct SmallNodeCount(usize);
 
     impl QuickArbitrary for SmallNodeCount {
@@ -1004,8 +1002,8 @@ mod tests {
         expected: ExpectedGraphResult,
     ) -> bool {
         match (result, expected) {
-            (Ok(_), ExpectedGraphResult::Ok) => true,
-            (
+            (Ok(_), ExpectedGraphResult::Ok)
+            | (
                 Err(WorkflowValidationError::DuplicateNode { .. }),
                 ExpectedGraphResult::DuplicateNode,
             ) => true,
@@ -1301,6 +1299,7 @@ mod tests {
 
     #[test]
     fn generated_validation_cases_return_consistent_error_variants_without_panicking() {
+        #[allow(clippy::needless_pass_by_value)]
         fn property(case: GeneratedValidationCase) -> bool {
             panic::catch_unwind(AssertUnwindSafe(|| validate_generated_case(&case)))
                 .unwrap_or(false)
