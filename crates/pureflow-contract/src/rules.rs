@@ -191,13 +191,10 @@ pub fn validate_rule_set(
     rule_node_id: &NodeId,
     rule_set: &RuleSet,
 ) -> Result<(), RuleContractViolation> {
-    match rule_set_violations(workflow, rule_node_id, rule_set)
+    rule_set_violations(workflow, rule_node_id, rule_set)
         .into_iter()
         .next()
-    {
-        Some(violation) => Err(violation),
-        None => Ok(()),
-    }
+        .map_or(Ok(()), Err)
 }
 
 /// Collect every [`RuleContractViolation`] for a rule set hosted by `rule_node_id`.

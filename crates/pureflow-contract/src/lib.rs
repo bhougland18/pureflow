@@ -596,16 +596,16 @@ mod tests {
             let mut outputs_by_node: Vec<BTreeSet<PortId>> = vec![BTreeSet::new(); node_count];
             let mut edges = Vec::new();
 
-            for source in 0..node_count {
-                for target in (source + 1)..node_count {
+            for (source, outputs) in outputs_by_node.iter_mut().enumerate() {
+                for (target, inputs) in inputs_by_node.iter_mut().enumerate().skip(source + 1) {
                     if bool::arbitrary(g) {
                         let source_node = generated_node_id(source);
                         let target_node = generated_node_id(target);
                         let source_port = generated_output_port(target);
                         let target_port = generated_input_port(source);
 
-                        outputs_by_node[source].insert(source_port.clone());
-                        inputs_by_node[target].insert(target_port.clone());
+                        outputs.insert(source_port.clone());
+                        inputs.insert(target_port.clone());
                         edges.push(EdgeDefinition::new(
                             EdgeEndpoint::new(source_node, source_port),
                             EdgeEndpoint::new(target_node, target_port),
@@ -696,6 +696,7 @@ mod tests {
 
     #[test]
     fn generated_non_empty_schema_refs_round_trip() {
+        #[allow(clippy::needless_pass_by_value)]
         fn property(input: NonEmptySchemaString) -> bool {
             let schema = SchemaRef::new(input.0.clone()).expect("generated schema ref is valid");
             schema.as_str() == input.0
@@ -708,6 +709,7 @@ mod tests {
 
     #[test]
     fn generated_matching_workflow_contracts_validate() {
+        #[allow(clippy::needless_pass_by_value)]
         fn property(case: MatchingWorkflowContractCase) -> bool {
             validate_workflow_contracts(&case.workflow, &case.contracts, &case.capabilities).is_ok()
         }
