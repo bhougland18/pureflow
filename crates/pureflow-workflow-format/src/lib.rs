@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 pub const CURRENT_PUREFLOW_VERSION: &str = "1";
 
 /// Raw workflow document after parser-level decoding.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawWorkflowDefinition {
     /// Required Pureflow workflow format version.
@@ -94,7 +94,7 @@ impl RawWorkflowDefinition {
     pub async fn resolve_rule_sets(
         &self,
         registry: &SourceRegistry,
-    ) -> Result<RawWorkflowDefinition, WorkflowFormatError> {
+    ) -> Result<Self, WorkflowFormatError> {
         let mut resolved_nodes: Vec<RawNodeDefinition> = Vec::with_capacity(self.nodes.len());
         for (node_index, node) in self.nodes.iter().enumerate() {
             let rule_set: Option<RuleSet> =
@@ -119,7 +119,7 @@ impl RawWorkflowDefinition {
             });
         }
 
-        Ok(RawWorkflowDefinition {
+        Ok(Self {
             pureflow_version: self.pureflow_version.clone(),
             id: self.id.clone(),
             nodes: resolved_nodes,
@@ -225,7 +225,7 @@ async fn resolve_node_rule_set(
 }
 
 /// Raw node declaration after parser-level decoding.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawNodeDefinition {
     /// Node identifier.
