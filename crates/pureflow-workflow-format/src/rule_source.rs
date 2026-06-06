@@ -144,7 +144,7 @@ impl SourceRegistry {
         }
 
         // Plain path — use LocalFsSource with the configured base directory.
-        let base = self.base_dir.as_deref().unwrap_or(Path::new("."));
+        let base = self.base_dir.as_deref().unwrap_or_else(|| Path::new("."));
         LocalFsSource::new(base).load(ref_uri).await
     }
 }
