@@ -94,7 +94,7 @@ impl std::fmt::Debug for WasmRuleNode {
             .field("strategy", &self.rule_set.strategy)
             .field("rules", &self.rule_set.rules.len())
             .field("has_metadata_sink", &self.metadata_sink.is_some())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -110,8 +110,7 @@ impl NodeExecutor for WasmRuleNode {
             loop {
                 let packet: PortPacket = match inputs.recv(&in_port, &cancellation).await {
                     Ok(Some(p)) => p,
-                    Ok(None) => break,
-                    Err(PortRecvError::Disconnected { .. }) => break,
+                    Ok(None) | Err(PortRecvError::Disconnected { .. }) => break,
                     Err(PortRecvError::UnknownPort { port_id }) => {
                         return Err(PureflowError::execution(format!(
                             "wasm rule node: input port `{port_id}` not declared"
@@ -200,8 +199,10 @@ async fn execute_action(
                 .await
                 .map_err(|e: PortSendError| PureflowError::execution(e.to_string()))?;
         }
-        RuleAction::Drop => {
-            // Packet consumed and discarded — no send needed.
+        RuleAction::Drop | RuleAction::Tag { .. } => {
+            // Drop: packet consumed and discarded — no send needed.
+            // Tag: non-terminal — the evaluator folds tags into the decision and
+            // never returns Tag as a terminal action.
         }
         RuleAction::DeadLetter(reason) => {
             let dead_port = PortId::new("dead_letter")
@@ -213,10 +214,6 @@ async fn execute_action(
                 .map_err(|e: PortSendError| {
                     PureflowError::execution(format!("dead-letter send failed ({reason}): {e}"))
                 })?;
-        }
-        RuleAction::Tag { .. } => {
-            // Non-terminal: the evaluator folds tags into the decision and never
-            // returns Tag as a terminal action.
         }
         RuleAction::Halt(message) => {
             return Err(PureflowError::execution(format!("rule halted: {message}")));
@@ -281,7 +278,7 @@ fn build_rule_eval_record(
     }
 }
 
-fn strategy_to_eval(strategy: EvaluationStrategy) -> RuleEvalStrategy {
+const fn strategy_to_eval(strategy: EvaluationStrategy) -> RuleEvalStrategy {
     match strategy {
         EvaluationStrategy::FirstMatch => RuleEvalStrategy::FirstMatch,
         EvaluationStrategy::AllMatches => RuleEvalStrategy::AllMatches,
@@ -627,18 +624,8 @@ mod tests {
                 },
             ),
             (node_id("router"), TestExecutor::Router(router)),
-            (
-                node_id("high-sink"),
-                TestExecutor::Sink {
-                    received: high.clone(),
-                },
-            ),
-            (
-                node_id("std-sink"),
-                TestExecutor::Sink {
-                    received: std.clone(),
-                },
-            ),
+            (node_id("high-sink"), TestExecutor::Sink { received: high }),
+            (node_id("std-sink"), TestExecutor::Sink { received: std }),
         ]));
         let workflow = routing_workflow();
         let execution =
