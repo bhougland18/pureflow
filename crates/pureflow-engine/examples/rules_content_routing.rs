@@ -164,7 +164,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let router_a: Arc<RuleNode> =
         Arc::new(RuleNode::new(shared_rules.clone()).with_metadata_sink(metadata_sink.clone()));
     let router_b: Arc<RuleNode> =
-        Arc::new(RuleNode::new(shared_rules.clone()).with_metadata_sink(metadata_sink.clone()));
+        Arc::new(RuleNode::new(shared_rules).with_metadata_sink(metadata_sink.clone()));
     let audit: Arc<RuleNode> =
         Arc::new(RuleNode::new(audit_rules).with_metadata_sink(metadata_sink.clone()));
 
@@ -217,13 +217,40 @@ fn main() -> Result<(), Box<dyn Error>> {
         ))?;
     metadata_sink.flush()?;
 
+    // Release the registry (and with it each RuleNode's sink clone) so the
+    // metadata sink is uniquely owned and can be unwrapped for inspection.
+    drop(registry);
+
+    println!("content-routing workflow `{}` completed", workflow.id());
+    println!("payments processed: {}", PAYMENTS.len());
+    println!("parallel routers sharing one Arc<RuleSet>: router-a, router-b");
+    println!("audit router with trace_conditions=true: audit");
+
+    verify_expected_counts(metadata_sink, &high, &standard, &fast)?;
+
+    println!("scheduled nodes: {}", summary.scheduled_node_count());
+    println!("completed nodes: {}", summary.completed_node_count());
+
+    if summary.terminal_state() != WorkflowTerminalState::Completed {
+        return Err(PureflowError::execution(
+            "workflow did not reach the Completed terminal state",
+        )
+        .into());
+    }
+    summary.into_result()?;
+    Ok(())
+}
+
+fn verify_expected_counts(
+    metadata_sink: Arc<JsonlMetadataSink<Vec<u8>>>,
+    high: &Arc<Mutex<Vec<PacketPayload>>>,
+    standard: &Arc<Mutex<Vec<PacketPayload>>>,
+    fast: &Arc<Mutex<Vec<PacketPayload>>>,
+) -> Result<(), Box<dyn Error>> {
     let high_count = high.lock().expect("high lock").len();
     let standard_count = standard.lock().expect("standard lock").len();
     let fast_count = fast.lock().expect("fast lock").len();
 
-    // Release the registry (and with it each RuleNode's sink clone) so the
-    // metadata sink is uniquely owned and can be unwrapped for inspection.
-    drop(registry);
     let metadata_jsonl: String = metadata_jsonl_from_sink(metadata_sink)?;
     let rule_eval_records: usize = metadata_jsonl
         .lines()
@@ -263,10 +290,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .into());
     }
 
-    println!("content-routing workflow `{}` completed", workflow.id());
-    println!("payments processed: {}", PAYMENTS.len());
-    println!("parallel routers sharing one Arc<RuleSet>: router-a, router-b");
-    println!("audit router with trace_conditions=true: audit");
     println!("high-value lane packets: {high_count}");
     println!("standard lane packets:   {standard_count}");
     println!(
@@ -274,16 +297,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     println!("rule_eval metadata records: {rule_eval_records}");
     println!("rule_eval records carrying a condition trace (audit): {traced_records}");
-    println!("scheduled nodes: {}", summary.scheduled_node_count());
-    println!("completed nodes: {}", summary.completed_node_count());
 
-    if summary.terminal_state() != WorkflowTerminalState::Completed {
-        return Err(PureflowError::execution(
-            "workflow did not reach the Completed terminal state",
-        )
-        .into());
-    }
-    summary.into_result()?;
     Ok(())
 }
 

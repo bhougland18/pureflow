@@ -2370,13 +2370,13 @@ mod tests {
                             .map_err(PureflowError::from)
                     }
                     DisconnectedDownstreamRole::Sink => {
-                        if let Some(sender) = self
+                        let sender_opt = self
                             .signal
                             .sender
                             .lock()
                             .expect("disconnect sender lock should not be poisoned")
-                            .take()
-                        {
+                            .take();
+                        if let Some(sender) = sender_opt {
                             let _send_result = sender.send(());
                         }
                         Ok(())
@@ -2505,13 +2505,13 @@ mod tests {
                         Ok(())
                     }
                     FanOutPartialFailureRole::DroppingSink => {
-                        if let Some(sender) = self
+                        let sender_opt = self
                             .state
                             .dropped_sender
                             .lock()
                             .expect("fan-out dropped sender lock should not be poisoned")
-                            .take()
-                        {
+                            .take();
+                        if let Some(sender) = sender_opt {
                             let _send_result = sender.send(());
                         }
                         Ok(())
