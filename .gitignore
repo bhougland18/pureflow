@@ -4,3 +4,7 @@
 target/
 result
 result-*
+
+# Agent sandbox tooling written into polecat worktrees (opencode/claude) — never commit
+.opencode/
+.claude/
