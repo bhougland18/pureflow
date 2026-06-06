@@ -853,8 +853,8 @@ pub fn metadata_record_to_json_value(record: &MetadataRecord) -> Value {
                 .iter()
                 .map(|(k, v)| json!({"key": k, "value": v}))
                 .collect::<Vec<_>>(),
-            "source_node": rule_eval.source_node.as_ref().map(|n| n.as_str()),
-            "arrival_port": rule_eval.arrival_port.as_ref().map(|p| p.as_str()),
+            "source_node": rule_eval.source_node.as_ref().map(NodeId::as_str),
+            "arrival_port": rule_eval.arrival_port.as_ref().map(PortId::as_str),
             "hop_count": rule_eval.hop_count,
             "tags_present_at_eval": rule_eval.tags_present_at_eval
                 .iter()
@@ -868,7 +868,7 @@ pub fn metadata_record_to_json_value(record: &MetadataRecord) -> Value {
     }
 }
 
-fn rule_eval_strategy_label(strategy: RuleEvalStrategy) -> &'static str {
+const fn rule_eval_strategy_label(strategy: RuleEvalStrategy) -> &'static str {
     match strategy {
         RuleEvalStrategy::FirstMatch => "first_match",
         RuleEvalStrategy::AllMatches => "all_matches",
@@ -896,7 +896,7 @@ fn condition_trace_to_json_value(trace: &ConditionTrace) -> Value {
     })
 }
 
-fn condition_surface_record_label(surface: ConditionSurfaceRecord) -> &'static str {
+const fn condition_surface_record_label(surface: ConditionSurfaceRecord) -> &'static str {
     match surface {
         ConditionSurfaceRecord::Payload => "payload",
         ConditionSurfaceRecord::Tag => "tag",
