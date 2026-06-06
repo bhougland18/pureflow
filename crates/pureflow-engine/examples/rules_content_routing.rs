@@ -149,6 +149,8 @@ impl NodeExecutor for ContentRoutingExecutor {
     }
 }
 
+// example walkthrough is intentionally linear
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     // Shared metadata sink: lifecycle/message/queue-pressure records come from
     // the engine, RuleEval records come from each RuleNode — all into one JSONL
@@ -164,7 +166,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let router_a: Arc<RuleNode> =
         Arc::new(RuleNode::new(shared_rules.clone()).with_metadata_sink(metadata_sink.clone()));
     let router_b: Arc<RuleNode> =
-        Arc::new(RuleNode::new(shared_rules.clone()).with_metadata_sink(metadata_sink.clone()));
+        Arc::new(RuleNode::new(shared_rules).with_metadata_sink(metadata_sink.clone()));
     let audit: Arc<RuleNode> =
         Arc::new(RuleNode::new(audit_rules).with_metadata_sink(metadata_sink.clone()));
 

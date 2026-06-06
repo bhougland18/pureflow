@@ -67,7 +67,7 @@ fn no_channel_or_port_types_cross_the_boundary() {
     let resolve = load();
     // The host owns all packet movement; no boundary type may name a channel,
     // port, or send/recv concept.
-    for (_, ty) in resolve.types.iter() {
+    for (_, ty) in &resolve.types {
         if let Some(name) = ty.name.as_deref() {
             let lower = name.to_ascii_lowercase();
             for banned in [
