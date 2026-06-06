@@ -1,4 +1,4 @@
-//! Rule, RuleSet, EvaluationStrategy, and RuleDecision types.
+//! Rule, `RuleSet`, `EvaluationStrategy`, and `RuleDecision` types.
 
 use crate::action::RuleAction;
 use crate::condition::{Condition, ScalarValue};

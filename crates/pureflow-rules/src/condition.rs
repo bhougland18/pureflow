@@ -313,11 +313,11 @@ pub enum Condition {
 
     // --- Logical combinators ---
     /// All sub-conditions must be true.
-    And(Vec<Condition>),
+    And(Vec<Self>),
     /// At least one sub-condition must be true.
-    Or(Vec<Condition>),
+    Or(Vec<Self>),
     /// The sub-condition must be false.
-    Not(Box<Condition>),
+    Not(Box<Self>),
     /// Always true regardless of packet content.
     Always,
     /// Always false regardless of packet content.
