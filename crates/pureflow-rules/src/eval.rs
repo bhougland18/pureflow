@@ -1,7 +1,5 @@
 //! Rule set evaluator — pure function over rule sets and packets.
 
-use std::collections::BTreeMap;
-
 use pureflow_core::{ConditionSurfaceRecord, ConditionTrace, PacketPayload, ports::PortPacket};
 
 use crate::{
@@ -22,6 +20,11 @@ use crate::{
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RuleSetEvaluator;
 
+// The per-strategy helpers deliberately mirror the public `evaluate` method's
+// `&self` shape for a consistent evaluator API, even though the unit struct
+// carries no state. Suppress the signature-shape lints that flow from that
+// design choice.
+#[allow(clippy::unused_self, clippy::trivially_copy_pass_by_ref)]
 impl RuleSetEvaluator {
     /// Evaluate a rule set against one packet and return a routing decision.
     ///
@@ -120,10 +123,8 @@ impl RuleSetEvaluator {
             if rule_set.trace_conditions {
                 traces.push(condition_trace(rule, &rule.condition, matched));
             }
-            if matched {
-                if let RuleAction::Tag { key, value } = &rule.action {
-                    tags_applied.push((key.clone(), value.clone()));
-                }
+            if matched && let RuleAction::Tag { key, value } = &rule.action {
+                tags_applied.push((key.clone(), value.clone()));
             }
         }
 
@@ -207,7 +208,7 @@ fn condition_trace(rule: &Rule, condition: &Condition, matched: bool) -> Conditi
     )
 }
 
-fn surface_to_record(surface: ConditionSurface) -> ConditionSurfaceRecord {
+const fn surface_to_record(surface: ConditionSurface) -> ConditionSurfaceRecord {
     match surface {
         ConditionSurface::Payload => ConditionSurfaceRecord::Payload,
         ConditionSurface::Tag => ConditionSurfaceRecord::Tag,
@@ -226,56 +227,45 @@ fn eval_condition(
 ) -> bool {
     match condition {
         // --- Payload conditions ---
-        Condition::FieldEq { path, value } => resolve_payload(payload, path)
-            .map(|v| json_value_eq_scalar(v, value))
-            .unwrap_or(false),
-        Condition::FieldNeq { path, value } => resolve_payload(payload, path)
-            .map(|v| !json_value_eq_scalar(v, value))
-            .unwrap_or(false),
+        Condition::FieldEq { path, value } => {
+            resolve_payload(payload, path).is_some_and(|v| json_value_eq_scalar(v, value))
+        }
+        Condition::FieldNeq { path, value } => {
+            resolve_payload(payload, path).is_some_and(|v| !json_value_eq_scalar(v, value))
+        }
         Condition::FieldGt { path, value } => resolve_payload(payload, path)
             .and_then(|v| json_value_cmp_scalar(v, value))
-            .map(|ord| ord == std::cmp::Ordering::Greater)
-            .unwrap_or(false),
+            .is_some_and(|ord| ord == std::cmp::Ordering::Greater),
         Condition::FieldLt { path, value } => resolve_payload(payload, path)
             .and_then(|v| json_value_cmp_scalar(v, value))
-            .map(|ord| ord == std::cmp::Ordering::Less)
-            .unwrap_or(false),
+            .is_some_and(|ord| ord == std::cmp::Ordering::Less),
         Condition::FieldGte { path, value } => resolve_payload(payload, path)
             .and_then(|v| json_value_cmp_scalar(v, value))
-            .map(|ord| ord != std::cmp::Ordering::Less)
-            .unwrap_or(false),
+            .is_some_and(|ord| ord != std::cmp::Ordering::Less),
         Condition::FieldLte { path, value } => resolve_payload(payload, path)
             .and_then(|v| json_value_cmp_scalar(v, value))
-            .map(|ord| ord != std::cmp::Ordering::Greater)
-            .unwrap_or(false),
+            .is_some_and(|ord| ord != std::cmp::Ordering::Greater),
         Condition::FieldIn { path, values } => resolve_payload(payload, path)
-            .map(|v| values.iter().any(|s| json_value_eq_scalar(v, s)))
-            .unwrap_or(false),
+            .is_some_and(|v| values.iter().any(|s| json_value_eq_scalar(v, s))),
         Condition::FieldExists { path } => resolve_payload(payload, path).is_some(),
-        Condition::FieldAbsent { path } => resolve_payload(payload, path)
-            .map(|v| v.is_null())
-            .unwrap_or(true),
+        Condition::FieldAbsent { path } => {
+            resolve_payload(payload, path).is_none_or(serde_json::Value::is_null)
+        }
         Condition::FieldMatches { path, pattern } => resolve_payload(payload, path)
             .and_then(|v| v.as_str())
-            .map(|s| pattern.matches(s))
-            .unwrap_or(false),
+            .is_some_and(|s| pattern.matches(s)),
 
         // --- Tag conditions ---
         Condition::TagEq { key, value } => context
             .tags
             .get(key.as_str())
-            .map(|v| scalar_eq(v, value))
-            .unwrap_or(false),
+            .is_some_and(|v| scalar_eq(v, value)),
         Condition::TagExists { key } => context.tags.contains_key(key.as_str()),
         Condition::TagAbsent { key } => !context.tags.contains_key(key.as_str()),
 
         // --- Provenance conditions ---
-        Condition::SourceNode { node_id } => {
-            context.source_node.map(|n| n == node_id).unwrap_or(false)
-        }
-        Condition::ArrivedOnPort { port_id } => {
-            context.arrival_port.map(|p| p == port_id).unwrap_or(false)
-        }
+        Condition::SourceNode { node_id } => context.source_node.is_some_and(|n| n == node_id),
+        Condition::ArrivedOnPort { port_id } => context.arrival_port.is_some_and(|p| p == port_id),
         Condition::HopCountGt { n } => context.hop_count > *n,
         Condition::HopCountLte { n } => context.hop_count <= *n,
 
@@ -284,8 +274,7 @@ fn eval_condition(
         Condition::ExecutionMetadataEq { key, value } => context
             .execution_metadata
             .get(key.as_str())
-            .map(|v| scalar_eq(v, value))
-            .unwrap_or(false),
+            .is_some_and(|v| scalar_eq(v, value)),
 
         // --- Logical combinators ---
         Condition::And(conditions) => conditions
@@ -321,7 +310,7 @@ fn json_value_eq_scalar(json: &serde_json::Value, scalar: &ScalarValue) -> bool 
         (serde_json::Value::String(s), ScalarValue::String(r)) => s == r,
         (serde_json::Value::Number(n), ScalarValue::Integer(i)) => n.as_i64() == Some(*i),
         (serde_json::Value::Number(n), ScalarValue::Float(f)) => {
-            n.as_f64().map(|v| v == *f).unwrap_or(false)
+            n.as_f64().is_some_and(|v| v == *f)
         }
         (serde_json::Value::Bool(b), ScalarValue::Boolean(r)) => b == r,
         (serde_json::Value::Null, ScalarValue::Null) => true,
@@ -363,7 +352,7 @@ fn condition_description(condition: &Condition) -> String {
         Condition::FieldGte { path, value } => format!("{path} >= {value}"),
         Condition::FieldLte { path, value } => format!("{path} <= {value}"),
         Condition::FieldIn { path, values } => {
-            let vals: Vec<String> = values.iter().map(|v| v.to_string()).collect();
+            let vals: Vec<String> = values.iter().map(ToString::to_string).collect();
             format!("{path} in [{}]", vals.join(", "))
         }
         Condition::FieldExists { path } => format!("{path} exists"),
@@ -397,7 +386,6 @@ fn condition_description(condition: &Condition) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use pureflow_core::context::ExecutionMetadata;
     use pureflow_core::message::{MessageEndpoint, MessageMetadata, MessageRoute};
     use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};

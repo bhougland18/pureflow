@@ -1,4 +1,4 @@
-//! Native RuleNode executor — first-class Pureflow node for declarative routing.
+//! Native `RuleNode` executor — first-class Pureflow node for declarative routing.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -6,9 +6,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use futures::future::BoxFuture;
 use pureflow_core::{
-    CancellationToken, ConditionSurfaceRecord, ConditionTrace, MetadataRecord, MetadataSink,
-    NodeExecutor, PacketPayload, PortPacket, PortSendError, PortsIn, PortsOut, PureflowError,
-    Result, RuleEvalAction, RuleEvalRecord, RuleEvalStrategy,
+    CancellationToken, MetadataRecord, MetadataSink, NodeExecutor, PortPacket, PortSendError,
+    PortsIn, PortsOut, PureflowError, Result, RuleEvalAction, RuleEvalRecord, RuleEvalStrategy,
     context::NodeContext,
     message::{MessageEndpoint, MessageMetadata, MessageRoute},
     ports::PortRecvError,
@@ -17,7 +16,7 @@ use pureflow_types::{MessageId, PortId};
 
 use crate::{
     action::RuleAction,
-    condition::{ConditionSurface, EvalContext, ScalarValue},
+    condition::{EvalContext, ScalarValue},
     eval::RuleSetEvaluator,
     rule::{EvaluationStrategy, RuleDecision, RuleSet},
 };
@@ -109,7 +108,7 @@ impl std::fmt::Debug for RuleNode {
             .field("strategy", &self.rule_set.strategy)
             .field("rules", &self.rule_set.rules.len())
             .field("has_metadata_sink", &self.metadata_sink.is_some())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -126,10 +125,9 @@ impl NodeExecutor for RuleNode {
                 // Receive one packet. Cancel on cancellation; stop on upstream close.
                 let packet: PortPacket = match inputs.recv(&in_port, &cancellation).await {
                     Ok(Some(p)) => p,
-                    // Upstream closed cleanly — normal end of stream.
-                    Ok(None) => break,
-                    // Upstream closed (all senders dropped) — end of stream.
-                    Err(PortRecvError::Disconnected { .. }) => break,
+                    // Upstream closed cleanly (`Ok(None)`) or all senders dropped
+                    // (`Disconnected`) — both are a normal end of stream.
+                    Ok(None) | Err(PortRecvError::Disconnected { .. }) => break,
                     // Port not declared — configuration error, fail loudly.
                     Err(PortRecvError::UnknownPort { port_id }) => {
                         return Err(PureflowError::execution(format!(
@@ -148,7 +146,11 @@ impl NodeExecutor for RuleNode {
                 // --- Drain phase begins: finish this packet regardless of cancellation ---
 
                 // Build the evaluation context from packet routing metadata.
-                let source_node = packet.metadata().route().source().map(|ep| ep.node_id());
+                let source_node = packet
+                    .metadata()
+                    .route()
+                    .source()
+                    .map(MessageEndpoint::node_id);
                 let arrival_port = Some(packet.metadata().route().target().port_id());
                 let tags: BTreeMap<String, ScalarValue> = BTreeMap::new();
                 let exec_meta: BTreeMap<String, ScalarValue> = BTreeMap::new();
@@ -237,7 +239,7 @@ fn build_rule_eval_record(
     }
 }
 
-fn strategy_to_eval(s: EvaluationStrategy) -> RuleEvalStrategy {
+const fn strategy_to_eval(s: EvaluationStrategy) -> RuleEvalStrategy {
     match s {
         EvaluationStrategy::FirstMatch => RuleEvalStrategy::FirstMatch,
         EvaluationStrategy::AllMatches => RuleEvalStrategy::AllMatches,
@@ -285,8 +287,11 @@ async fn execute_action(
                 .await
                 .map_err(|e: PortSendError| PureflowError::execution(e.to_string()))?;
         }
-        RuleAction::Drop => {
-            // Packet is consumed and discarded — no send needed.
+        RuleAction::Drop | RuleAction::Tag { .. } => {
+            // Drop: packet is consumed and discarded — no send needed.
+            // Tag: a non-terminal action — the evaluator accumulates tags and
+            // produces a terminal action, so this arm is not reached as the
+            // terminal of a FirstMatch/Score evaluation.
         }
         RuleAction::DeadLetter(reason) => {
             let dead_port = PortId::new("dead_letter")
@@ -298,11 +303,6 @@ async fn execute_action(
                 .map_err(|e: PortSendError| {
                     PureflowError::execution(format!("dead-letter send failed ({reason}): {e}"))
                 })?;
-        }
-        RuleAction::Tag { .. } => {
-            // Tag is a non-terminal action — the evaluator accumulates tags
-            // and produces a terminal action. This arm is not reached as the
-            // terminal of a FirstMatch/Score evaluation.
         }
         RuleAction::Halt(message) => {
             return Err(PureflowError::execution(format!("rule halted: {message}")));
@@ -337,7 +337,7 @@ mod tests {
     use super::*;
     use futures::executor::block_on;
     use pureflow_core::{
-        CancellationHandle, JsonlMetadataSink, PacketPayload,
+        JsonlMetadataSink, PacketPayload,
         context::ExecutionMetadata,
         message::{MessageEndpoint, MessageMetadata, MessageRoute},
         ports::PortRecvError,
@@ -347,7 +347,7 @@ mod tests {
         run_workflow_with_registry_and_metadata_sink_summary,
     };
     use pureflow_test_kit::{NodeBuilder, WorkflowBuilder};
-    use pureflow_types::{ExecutionId, MessageId, NodeId, PortId, WorkflowId};
+    use pureflow_types::{ExecutionId, MessageId, NodeId, PortId};
     use pureflow_workflow::WorkflowDefinition;
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -364,24 +364,8 @@ mod tests {
     fn port_id(s: &str) -> PortId {
         PortId::new(s).unwrap()
     }
-    fn workflow_id(s: &str) -> WorkflowId {
-        WorkflowId::new(s).unwrap()
-    }
     fn field(s: &str) -> FieldPath {
         FieldPath::new(s).unwrap()
-    }
-
-    fn rule_packet(wf: &WorkflowId, payload: PacketPayload) -> PortPacket {
-        let src = MessageEndpoint::new(node_id("source"), port_id("out"));
-        let tgt = MessageEndpoint::new(node_id("router"), port_id("in"));
-        let route = MessageRoute::new(Some(src), tgt);
-        let meta = MessageMetadata::new(
-            MessageId::new("m1").unwrap(),
-            wf.clone(),
-            ExecutionMetadata::first_attempt(ExecutionId::new("run-1").unwrap()),
-            route,
-        );
-        PortPacket::new(meta, payload)
     }
 
     fn routing_workflow() -> WorkflowDefinition {
@@ -660,13 +644,13 @@ mod tests {
             (
                 node_id("high-sink"),
                 TestExecutor::Sink {
-                    received: high_received.clone(),
+                    received: high_received,
                 },
             ),
             (
                 node_id("std-sink"),
                 TestExecutor::Sink {
-                    received: std_received.clone(),
+                    received: std_received,
                 },
             ),
         ]));
@@ -748,13 +732,13 @@ mod tests {
             (
                 node_id("high-sink"),
                 TestExecutor::Sink {
-                    received: high_received.clone(),
+                    received: high_received,
                 },
             ),
             (
                 node_id("std-sink"),
                 TestExecutor::Sink {
-                    received: std_received.clone(),
+                    received: std_received,
                 },
             ),
         ]));
