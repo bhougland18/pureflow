@@ -86,9 +86,8 @@ impl NodeExecutor for FsWatcherNode {
                 }
 
                 // Shutdown on any control packet.
-                match inputs.try_recv(&control_port)? {
-                    Some(_) => return Ok(()),
-                    None => {}
+                if inputs.try_recv(&control_port)?.is_some() {
+                    return Ok(());
                 }
 
                 // Drain all pending fs events from the std channel.
@@ -98,9 +97,8 @@ impl NodeExecutor for FsWatcherNode {
                         Ok(event) => {
                             got_event = true;
                             let now = Instant::now();
-                            let within_debounce = last_emit
-                                .map(|t| now.duration_since(t) < debounce)
-                                .unwrap_or(false);
+                            let within_debounce =
+                                last_emit.is_some_and(|t| now.duration_since(t) < debounce);
                             if within_debounce {
                                 continue;
                             }
