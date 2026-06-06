@@ -8,7 +8,7 @@ use pureflow_types::PortId;
 ///
 /// Exposes the full rule definition, which ports each rule can target, which
 /// condition surfaces each rule draws from, and unreachable-rule analysis.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleSetIntrospection {
     /// Identifier of the rule set.
     pub id: String,
@@ -29,7 +29,7 @@ pub struct RuleSetIntrospection {
 }
 
 /// Introspectable view of one rule.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleIntrospection {
     /// Rule identifier.
     pub id: String,
@@ -55,7 +55,10 @@ pub enum RuleActionSummary {
     /// Routes to the dead-letter port.
     DeadLetter,
     /// Applies a tag and continues evaluation (non-terminal).
-    Tag { key: String },
+    Tag {
+        /// The tag key.
+        key: String,
+    },
     /// Halts the node with an error.
     Halt,
 }
@@ -65,6 +68,7 @@ pub enum RuleActionSummary {
 /// A rule may draw from multiple surfaces (e.g. `And` combining a payload
 /// field check with a tag check). All surfaces present in the condition tree
 /// are reflected here.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ConditionSurfaceSummary {
     /// Condition evaluates against packet payload fields.
@@ -83,7 +87,7 @@ impl ConditionSurfaceSummary {
     /// Return `true` if this condition only uses constant values and never
     /// depends on packet content.
     #[must_use]
-    pub fn is_constant_only(&self) -> bool {
+    pub const fn is_constant_only(&self) -> bool {
         self.constant && !self.payload && !self.tag && !self.provenance && !self.execution_context
     }
 }
@@ -194,7 +198,7 @@ fn action_summary(action: &RuleAction) -> RuleActionSummary {
     }
 }
 
-fn strategy_to_eval(s: EvaluationStrategy) -> RuleEvalStrategy {
+const fn strategy_to_eval(s: EvaluationStrategy) -> RuleEvalStrategy {
     match s {
         EvaluationStrategy::FirstMatch => RuleEvalStrategy::FirstMatch,
         EvaluationStrategy::AllMatches => RuleEvalStrategy::AllMatches,
@@ -225,16 +229,16 @@ fn detect_unreachable(rule_set: &RuleSet) -> Vec<UnreachableRule> {
         // Find the first Always rule; everything after it is shadowed.
         let mut always_rule_id: Option<&str> = None;
         for rule in &rule_set.rules {
-            if let Some(shadower) = always_rule_id {
-                if !is_never(&rule.condition) {
-                    // Don't double-report a Never rule already caught above.
-                    unreachable.push(UnreachableRule {
-                        rule_id: rule.id.clone(),
-                        reason: UnreachableReason::ShadowedByAlways {
-                            shadowing_rule_id: shadower.to_owned(),
-                        },
-                    });
-                }
+            if let Some(shadower) = always_rule_id
+                && !is_never(&rule.condition)
+            {
+                // Don't double-report a Never rule already caught above.
+                unreachable.push(UnreachableRule {
+                    rule_id: rule.id.clone(),
+                    reason: UnreachableReason::ShadowedByAlways {
+                        shadowing_rule_id: shadower.to_owned(),
+                    },
+                });
             }
             if matches!(&rule.condition, Condition::Always) && always_rule_id.is_none() {
                 always_rule_id = Some(rule.id.as_str());
@@ -254,18 +258,16 @@ fn detect_unreachable(rule_set: &RuleSet) -> Vec<UnreachableRule> {
                         path: p2,
                         value: v2,
                     } = &later.condition
+                        && p1 == p2
+                        && v1 == v2
+                        && !unreachable.iter().any(|u| u.rule_id == later.id)
                     {
-                        if p1 == p2
-                            && v1 == v2
-                            && !unreachable.iter().any(|u| u.rule_id == later.id)
-                        {
-                            unreachable.push(UnreachableRule {
-                                rule_id: later.id.clone(),
-                                reason: UnreachableReason::ExactFieldEqSubsumed {
-                                    shadowing_rule_id: rule.id.clone(),
-                                },
-                            });
-                        }
+                        unreachable.push(UnreachableRule {
+                            rule_id: later.id.clone(),
+                            reason: UnreachableReason::ExactFieldEqSubsumed {
+                                shadowing_rule_id: rule.id.clone(),
+                            },
+                        });
                     }
                 }
             }
@@ -275,7 +277,7 @@ fn detect_unreachable(rule_set: &RuleSet) -> Vec<UnreachableRule> {
     unreachable
 }
 
-fn is_never(condition: &Condition) -> bool {
+const fn is_never(condition: &Condition) -> bool {
     matches!(condition, Condition::Never)
 }
 
@@ -286,7 +288,6 @@ mod tests {
         Condition, EvaluationStrategy, FieldPath, Rule, RuleAction, RuleSet, ScalarValue,
     };
     use pureflow_types::PortId;
-    use std::sync::Arc;
 
     fn port(s: &str) -> PortId {
         PortId::new(s).unwrap()
